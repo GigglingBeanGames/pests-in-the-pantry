@@ -1,0 +1,4672 @@
+:root{
+  --bg:#17130f;--wood:#2b2118;--panel:#33281f;--panel2:#201913;--ink:#f3ead9;--muted:#b8aa97;--accent:#d7b86a;--danger:#d77261;
+  --green:#6d8b57;--red:#9d4f45;--blue:#55758e;--gold:#b88b34;
+}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);font-family:Georgia,"Times New Roman",serif;min-height:100vh;}
+button,select{font:inherit}button{cursor:pointer;border:1px solid #705b43;background:#493827;color:var(--ink);padding:.6rem .9rem;border-radius:10px}button:hover:not(:disabled){filter:brightness(1.12)}button:disabled{opacity:.35;cursor:not-allowed}.primary{background:#8a6332;border-color:#c29a57;font-weight:700}.big{padding:.8rem 2rem;font-size:1.1rem}.ghost{background:transparent}.small{padding:.25rem .55rem}.hidden{display:none!important}
+.topbar{display:flex;justify-content:space-between;align-items:center;top:0;z-index:10;}.brand{display:flex;}.topbar h1{letter-spacing:.02em;}.top-actions{display:flex;gap:8px;align-items:center}.turn-counter{text-align:center;padding:.55rem .8rem;border-radius:10px;border:1px solid #9a7848;background:#251c15;color:#f3d48d;font-weight:700;letter-spacing:.04em;}
+main{margin:auto;}.panel{background:linear-gradient(180deg,rgba(56,43,33,.97),rgba(37,29,22,.97));border:1px solid #66503b;border-radius:16px;box-shadow:0 16px 36px rgba(0,0,0,.23)}.setup-panel{max-width:720px;margin:8vh auto;padding:32px;text-align:center}.bot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}.bot-grid label{display:grid;gap:7px;text-align:left;color:var(--muted)}select{background:#201913;color:var(--ink);border:1px solid #6e5742;border-radius:8px;padding:9px}.tiny{font-size:.82rem;color:var(--muted)}
+.table-layout{display:grid;grid-template-rows:auto auto auto;}.opponents{display:grid;}.opp-head{display:flex;justify-content:space-between;gap:8px}.opp-name{font-weight:700}.meta{color:var(--muted);font-size:.88rem}.mini-hand{display:flex;margin-top:8px;}.mini-card{background:linear-gradient(135deg,#463526,#221a14);border:1px solid #755d46;}.known-card{height:58px;}
+.center-zone{display:grid;gap:12px;justify-items:center;}.pile-wrap{display:grid;text-align:center;}.pile-wrap>div{justify-items:center;}.current-pile-column{justify-items:center;}.current-pile-column .pile{margin-inline:auto}.label{text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;color:var(--muted);margin-bottom:6px}.pile{border-radius:12px;border:1px solid #7b644d;display:flex;align-items:center;justify-content:center;background:#1d1712;}.card-back:after{letter-spacing:.16em;font-weight:bold;}.out-pile{background:linear-gradient(145deg,#554231,#2b2119);position:relative}.out-pile:after{font-weight:700;font-size:1.3rem;}.count{color:var(--muted);font-size:.8rem;margin-top:4px}.status{text-align:center;}.action-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.you-head{display:flex;justify-content:space-between;align-items:center}.you h2{margin:.1rem 0}.turn-badge{padding:6px 10px;border-radius:999px;background:#1d1814;color:var(--muted);font-size:.8rem}.turn-badge.active{background:#73572e;color:#fff0bd}.pantry-row,.hand-row{display:flex;gap:8px;flex-wrap:wrap;min-height:128px}.hand-row{padding-top:6px}.hand-heading-row{display:flex;align-items:end;gap:16px;margin-top:8px;}.hand-heading-row>.label{margin-bottom:6px}.hand-sort{display:flex;align-items:center;gap:6px;font-family:Arial,sans-serif;font-size:.76rem;color:var(--muted);margin-bottom:4px}.hand-sort span{margin-right:2px}.sort-option{padding:.28rem .55rem;border-radius:999px;background:#241c16;border-color:#69533f;color:var(--muted);font-size:.75rem}.sort-option.active{background:#8a6332;border-color:#c29a57;color:#fff3d0;font-weight:700}
+.game-card{width:86px;border:2px solid #1d1713;position:relative;box-shadow:0 5px 12px rgba(0,0,0,.25);background:#eee;color:#17120f;user-select:none;transition:.12s transform,.12s box-shadow;}.game-card .num{position:absolute;left:7px;font-weight:700;}.game-card .pest{position:absolute;top:23px;text-align:center;font-weight:700;}.game-card .icon{position:absolute;inset:39px 8px 23px;place-items:center;font-size:2.2rem;}.game-card .effect{position:absolute;font-size:.54rem;line-height:1.08;font-family:Arial,sans-serif;}.green{background:linear-gradient(#9eb58b,#668453)}.red{background:linear-gradient(#c77c6d,#93493f)}.blue{background:linear-gradient(#8faabd,#51718a)}.gold{background:linear-gradient(#d7b55e,#aa7d2d)}.spider-card{background:linear-gradient(#777,#222);color:white}.face-down{color:#e1cba8;}.face-down .num,.face-down .pest,.face-down .effect{display:none}
+.log-panel{margin-top:14px;}.log-head{display:flex;justify-content:space-between;align-items:center}.log-head h3{margin:0}.log{overflow:auto;background:#17120e;border-radius:10px;padding:10px;font-family:Arial,sans-serif;font-size:.82rem;color:#d8ccbd;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.68);display:grid;place-items:center;padding:20px;z-index:50}.modal-card{position:relative;border-radius:16px;max-width:900px;width:min(900px,96vw);max-height:88vh;overflow:auto;padding:24px;}.modal-close{position:absolute;right:12px;top:10px;background:transparent;border:0;font-size:1.6rem}.choice-grid{display:flex;gap:10px;flex-wrap:wrap}.rules{line-height:1.45}.rules h2,.rules h3{color:#f3d48d}.rules table{width:100%;border-collapse:collapse}.rules td,.rules th{padding:7px;border-bottom:1px solid #5d4937;text-align:left}
+@media(max-width:760px){.opponents{grid-template-columns:1fr}.bot-grid{grid-template-columns:1fr}.pile-wrap{gap:14px}.game-card{width:74px;height:106px}.hand-row,.pantry-row{gap:5px}.topbar{padding:12px}.topbar h1{font-size:1.2rem}}
+
+@media(max-width:700px){.turn-counter{min-width:72px;padding:.45rem .6rem}}
+
+/* Interaction + animation polish */
+.last-played-by {
+  min-height: 18px;
+  margin-bottom: 4px;
+  
+  
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+.clickable-pile { cursor: pointer; }
+.clickable-pile:hover { outline: 2px solid rgba(215,184,106,.55); }
+.flying-card {
+  position: fixed !important;
+  z-index: 200;
+  pointer-events: none;
+  margin: 0 !important;
+  transform-origin: center center;
+  transition: transform .48s cubic-bezier(.2,.75,.2,1), opacity .48s ease;
+  will-change: transform, opacity;
+}
+
+.out-groups { display: grid; gap: 18px; }
+.out-group h3 { margin: 0 0 8px; color: #f3d48d; }
+.out-card-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.history-list { display: grid; gap: 10px; margin-top: 12px; }
+.history-entry {
+  padding: 10px 12px;
+  border: 1px solid #5d4937;
+  border-radius: 10px;
+  background: #201913;
+}
+.history-entry .history-meta { font-size: .74rem; color: var(--muted); margin-bottom: 7px; font-family: Arial, sans-serif; }
+.history-cards { display: flex; gap: 6px; flex-wrap: wrap; }
+.history-cards .game-card {  height: 82px; }
+.history-cards .game-card .pest { font-size: .58rem; top: 19px; }
+.history-cards .game-card .icon { inset: 31px 6px 16px; font-size: 1.45rem; }
+.history-cards .game-card .effect { display: none; }
+.history-cards .game-card .num { font-size: .9rem; }
+
+.end-game-message{margin:0 0 26px;}
+
+
+.end-game-modal h2{margin-bottom:14px;}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:28px;
+  transform:translate(-50%,10px);
+  z-index:300;
+  max-width:min(520px,90vw);
+  padding:11px 16px;
+  border-radius:10px;
+  border:1px solid #a36b55;
+  background:#2b1c17;
+  color:#ffe7d8;
+  font-family:Arial,sans-serif;
+  font-size:.9rem;
+  box-shadow:0 10px 30px rgba(0,0,0,.4);
+  opacity:0;
+  transition:opacity .18s ease,transform .18s ease;
+  pointer-events:none;
+}
+.toast.show{opacity:1;transform:translate(-50%,0);}
+
+
+/* v7 home + prompt polish */
+.setup-screen{
+  min-height:calc(100vh - 92px);
+  margin:-18px;
+  padding:clamp(28px,7vh,78px) 18px;
+  display:grid;
+  place-items:center;
+  background:
+    linear-gradient(rgba(23,19,15,.34),rgba(23,19,15,.56)),
+    url("assets/home-bg.png") center/cover no-repeat;
+  border-radius:0 0 18px 18px;
+}
+.setup-panel{
+  
+  margin:0;
+  padding:32px;
+  
+  backdrop-filter:blur(2px);
+}
+.home-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.fast-bots{
+  display:flex;align-items:center;gap:6px;
+  padding:.38rem .55rem;border:1px solid #6c5844;border-radius:9px;
+  background:#211a14;color:var(--muted);font:700 .72rem Arial,sans-serif;
+  white-space:nowrap;cursor:pointer;
+}
+.fast-bots input{accent-color:#c29a57}
+
+/* All action/decision boxes share comfortable centered spacing. */
+.decision-modal{text-align:center}
+.decision-modal>h2,.decision-modal>p{text-align:center}
+.decision-modal .choice-grid{justify-content:center;margin-top:22px}
+.card-choice-modal{text-align:center}
+.card-choice-modal>h2,.card-choice-modal>p{text-align:center}
+.card-choice-modal .choice-grid{justify-content:center;margin-top:22px}
+.pantry-choice-modal{text-align:center}
+.pantry-choice-modal .choice-grid{justify-content:center;margin-top:22px}
+.modal-card .choice-grid{row-gap:10px}
+
+/* Keep the long Mosquito title clear of its number corner. */
+.game-card.pest-4 .pest{font-size:.72rem;left:6px;right:6px;text-align:center}
+.history-cards .game-card.pest-4 .pest{font-size:.60rem;left:5px;right:5px;text-align:center}
+/* Mosquito is now card 6, so the old long-name spacing follows it. */
+.game-card.pest-6 .pest{font-size:.62rem;left:18px;right:3px}
+.history-cards .game-card.pest-6 .pest{font-size:.50rem;left:13px;right:2px}
+
+/* Out is now called Trash in the player-facing UI. */
+.out-pile:after{font-size:1rem;}
+
+@media(max-width:760px){
+  .setup-screen{margin:-18px -18px 0;padding:28px 12px;min-height:calc(100vh - 74px)}
+  .fast-bots{font-size:.65rem;padding:.32rem .45rem}
+}
+.home-mode main{max-width:none;padding:18px}
+
+
+/* v8 bot personalities + setup portraits */
+.setup-screen{
+  background-color:#c9b78d;
+  
+  
+  background-repeat:no-repeat;
+  
+}
+.setup-panel{width:min(860px,94vw)}
+.bot-grid{align-items:stretch}
+.bot-config{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:9px;
+  padding:14px 12px;
+  
+  border-radius:14px;
+  
+}
+.bot-config label{
+  width:100%;
+  display:grid;
+  gap:7px;
+  text-align:center;
+  color:var(--muted);
+}
+.bot-config select{width:100%;text-align:center}
+.bot-preview-img{
+  width:108px;
+  height:108px;
+  object-fit:contain;
+  border-radius:50%;
+  
+  background:#f4dfaa;
+  
+}
+.bot-description{
+  margin:0;
+  min-height:4.2em;
+  
+  font:400 .78rem/1.38 Arial,sans-serif;
+  text-align:center;
+}
+.opp-identity{display:flex;align-items:center;gap:10px;min-width:0}
+.opp-avatar{
+  
+  
+  flex:0 0 52px;
+  object-fit:contain;
+  border-radius:50%;
+  
+  
+}
+.opp-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+
+@media(max-width:760px){
+  .setup-screen{background-size:auto 88%;}
+  .bot-preview-img{width:88px;height:88px}
+  .bot-description{min-height:auto}
+}
+
+
+/* v11 intro, opponent-hand viewer, Runner status, and victory celebration */
+.title-intro{position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(18,14,11,.20);overflow:hidden;}
+.intro-word{font-weight:900;line-height:.78;will-change:transform,opacity;filter:drop-shadow(0 0 1px rgba(255,224,148,.35));}
+.intro-pests{font-size:clamp(4rem,12vw,9rem);}
+.intro-mid-row{display:flex;align-items:center;justify-content:center;min-height:clamp(2.5rem,6vw,5rem);}
+
+
+
+.intro-pantry{font-size:clamp(4rem,12vw,9rem);}
+.intro-start{margin-top:4px;font-family:"Copperplate","Copperplate Gothic Light",Impact,fantasy;color:rgba(255,244,213,.82)!important;will-change:transform,opacity;}
+
+
+
+
+.title-intro.intro-exit .intro-word,.title-intro.intro-exit .intro-start{animation:introGroupSwipe .62s cubic-bezier(.58,.02,.82,.38) forwards!important}
+.title-intro.intro-exit .intro-in{--exit-tilt:-8deg}.title-intro.intro-exit .intro-the{--exit-tilt:8deg}
+
+.setup-screen{position:relative;overflow:hidden}.setup-panel-hidden{visibility:hidden;opacity:0;transform:translateY(-115vh)}.setup-panel-enter{visibility:visible;animation:setupDrop .66s cubic-bezier(.18,.86,.28,1.06) both}
+
+.revealed-opponent-hand{gap:4px;flex-wrap:wrap;}.revealed-opponent-hand .game-card.small{width:42px;height:60px;font-size:.62rem}
+.runner-upgrade-badge{display:inline-block;margin-top:7px;padding:4px 9px;border-radius:999px;border:1px solid #d5a742;background:linear-gradient(90deg,#382713,#72501c,#382713);color:#ffe39a;font:800 .68rem/1 Arial,sans-serif;letter-spacing:.08em;box-shadow:0 0 12px rgba(224,174,68,.28)}
+.end-game-modal{text-align:center;position:relative;overflow:hidden;padding:18px 8px}.end-game-modal h2{text-align:center;font-size:clamp(2.6rem,8vw,5rem);margin:.1em 0 .05em;color:#f8d979;text-shadow:0 3px 0 #3a2515,0 0 22px rgba(244,193,67,.4)}.end-game-modal .victory-congrats{text-align:center;font:900 clamp(1.25rem,4vw,2.1rem)/1 Impact,"Arial Black",sans-serif;letter-spacing:.06em;margin:8px 0 12px}.end-game-modal .end-game-message{text-align:center;font-size:1.05rem}.end-game-modal .choice-grid{justify-content:center;margin-top:28px}
+.fireworks{position:absolute;inset:0;pointer-events:none}.fireworks i{position:absolute;width:7px;height:7px;border-radius:50%;background:#f7d65d;box-shadow:18px 0 #fff0a4,-18px 0 #e89742,0 18px #fff,-13px -13px #e3bc50,13px 13px #f2ead1;animation:firework 1.1s ease-out infinite}.fireworks i:nth-child(1){left:12%;top:18%;animation-delay:.05s}.fireworks i:nth-child(2){left:84%;top:22%;animation-delay:.35s}.fireworks i:nth-child(3){left:22%;top:68%;animation-delay:.65s}.fireworks i:nth-child(4){left:78%;top:70%;animation-delay:.15s}.fireworks i:nth-child(5){left:48%;top:12%;animation-delay:.8s}.fireworks i:nth-child(6){left:52%;top:78%;animation-delay:.5s}@keyframes firework{0%{transform:scale(.2);opacity:0}25%{opacity:1}75%{transform:scale(2.4);opacity:.9}100%{transform:scale(3.1);opacity:0}}
+
+
+/* v19 Pantry selection presentation */
+.pantry-choice-grid{
+  justify-content:center;
+  align-items:flex-start;
+  gap:16px;
+  margin-top:22px;
+  transition:opacity .2s ease,filter .2s ease;
+}
+.pantry-choice-button{
+  appearance:none;
+  border:0;
+  background:transparent;
+  padding:7px;
+  border-radius:14px;
+  color:inherit;
+  display:grid;
+  justify-items:center;
+  gap:6px;
+}
+.pantry-choice-button.eligible{cursor:pointer}
+.pantry-choice-button.ineligible{
+  cursor:default;
+  opacity:.58;
+}
+.pantry-choice-button:disabled{pointer-events:none}
+.pantry-choice-glow{
+  outline:2px solid rgba(255,221,116,.92);
+  box-shadow:
+    0 0 0 2px rgba(255,210,83,.18),
+    0 0 13px rgba(255,216,91,.78),
+    0 0 28px rgba(255,191,59,.38),
+    0 8px 16px rgba(0,0,0,.35);
+  animation:pantryChoiceGlow 1.15s ease-in-out infinite alternate;
+}
+.pantry-choice-button.eligible:hover .pantry-choice-glow{
+  transform:translateY(-6px) scale(1.025);
+  box-shadow:
+    0 0 0 3px rgba(255,225,126,.26),
+    0 0 18px rgba(255,225,112,.98),
+    0 0 36px rgba(255,190,56,.55),
+    0 10px 20px rgba(0,0,0,.4);
+}
+@keyframes pantryChoiceGlow{
+  from{filter:brightness(1);box-shadow:0 0 8px rgba(255,216,91,.58),0 0 20px rgba(255,191,59,.28),0 8px 16px rgba(0,0,0,.35)}
+  to{filter:brightness(1.08);box-shadow:0 0 15px rgba(255,226,125,.9),0 0 34px rgba(255,191,59,.48),0 8px 16px rgba(0,0,0,.35)}
+}
+.pantry-grid-dimmed{
+  opacity:.16;
+  filter:blur(1px);
+  pointer-events:none;
+}
+.pantry-reveal-preview{
+  position:absolute;
+  inset:0;
+  z-index:5;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  
+  background:rgba(25,18,12,.82);
+  animation:pantryRevealFade .18s ease both;
+}
+.pantry-reveal-preview.hidden{display:none}
+.pantry-reveal-label{
+  color:#f7dc87;
+  font:900 1.15rem/1 Impact,"Arial Black",sans-serif;
+  letter-spacing:.12em;
+  text-shadow:0 2px 10px rgba(0,0,0,.7);
+}
+.pantry-reveal-card{
+  transform:scale(1.3);
+  box-shadow:0 0 0 3px rgba(248,218,119,.7),0 0 32px rgba(248,204,82,.5),0 14px 34px rgba(0,0,0,.5);
+  animation:pantryRevealPop .32s cubic-bezier(.15,1.45,.3,1) both;
+}
+@keyframes pantryRevealPop{
+  from{opacity:0;transform:scale(.45) rotate(-7deg)}
+  to{opacity:1;transform:scale(1.3) rotate(0)}
+}
+@keyframes pantryRevealFade{from{opacity:0}to{opacity:1}}
+.pantry-choice-modal{position:relative;min-height:260px}
+
+
+/* v20 — reveal label clearance */
+.pantry-reveal-preview{gap:34px}
+.pantry-reveal-label{
+  position:relative;
+  z-index:8;
+  transform:translateY(-16px);
+  margin-bottom:10px;
+}
+.pantry-reveal-card{position:relative;z-index:6}
+
+/* v20 — received-card popup */
+.received-card-modal{text-align:center;min-height:390px}
+.received-card-modal h2{margin-bottom:8px;color:#f3d48d}
+.received-from{font:700 1rem/1.35 Arial,sans-serif;color:#e7d9c7;margin:0 0 26px}
+.received-card-spot{display:flex;justify-content:center;align-items:center;min-height:190px;margin:8px 0 30px}
+.received-card-big{
+  transform:scale(1.38);
+  box-shadow:0 0 0 3px rgba(245,211,119,.45),0 14px 34px rgba(0,0,0,.48);
+  animation:receivedCardPop .32s cubic-bezier(.15,1.4,.3,1) both;
+}
+.received-card-actions{justify-content:center}
+@keyframes receivedCardPop{
+  from{opacity:0;transform:scale(.55) rotate(-5deg)}
+  to{opacity:1;transform:scale(1.38) rotate(0)}
+}
+
+/* v20 — bot emoji reactions */
+.opp-avatar-wrap{
+  position:relative;
+  flex:0 0 52px;
+  
+}
+.bot-reaction-bubble{
+  position:absolute;
+  
+  left:38px;
+  top:-24px;
+  min-width:42px;
+  height:38px;
+  padding:3px 8px;
+  display:grid;
+  place-items:center;
+  border:2px solid #2b2118;
+  border-radius:18px;
+  background:#fff7e8;
+  color:#17120e;
+  font-size:1.55rem;
+  line-height:1;
+  box-shadow:0 5px 14px rgba(0,0,0,.36);
+  pointer-events:none;
+  animation:botReactionPop .22s cubic-bezier(.2,1.55,.3,1) both;
+}
+.bot-reaction-bubble:after{
+  content:"";
+  position:absolute;
+  left:5px;
+  bottom:-9px;
+  width:13px;
+  height:13px;
+  background:#fff7e8;
+  border-left:2px solid #2b2118;
+  border-bottom:2px solid #2b2118;
+  transform:rotate(-35deg) skew(-8deg);
+}
+@keyframes botReactionPop{
+  from{opacity:0;transform:translateY(8px) scale(.5) rotate(-8deg)}
+  to{opacity:1;transform:translateY(0) scale(1) rotate(0)}
+}
+
+/* v21 specialist bot status + level-up visuals */
+.opponent-status-slot{
+  
+  
+  display:flex;
+  align-items:center;
+  
+  
+}
+.opponent-status-slot .runner-upgrade-badge{margin-top:0}
+.enraged-badge{
+  border-color:#e35a32;
+  background:linear-gradient(90deg,#3a100b,#8b2518,#3a100b);
+  color:#ffd8c8;
+  box-shadow:0 0 14px rgba(239,75,36,.38);
+}
+.rage-meter{
+  width:min(100%,250px);
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:7px;
+  align-items:center;
+  font:800 .64rem/1 Arial,sans-serif;
+  letter-spacing:.06em;
+  color:#e8c7b9;
+}
+.rage-label{color:#ef8b68}
+.rage-count{min-width:25px;text-align:right;color:#f1b295}
+.rage-segments,.rage-overlay-bar{
+  display:flex;
+  gap:3px;
+  align-items:center;
+}
+.rage-segments i,.rage-overlay-bar i{
+  display:block;
+  flex:1 1 0;
+  height:9px;
+  min-width:7px;
+  border-radius:2px;
+  border:1px solid rgba(200,119,91,.45);
+  background:#211411;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.05);
+}
+.rage-segments i.filled,.rage-overlay-bar i.filled{
+  background:linear-gradient(#ff9a58,#d9341f);
+  border-color:#ffb37a;
+  box-shadow:0 0 7px rgba(255,86,35,.75),inset 0 1px 1px rgba(255,255,255,.4);
+}
+
+.game-event-overlay{
+  position:fixed;
+  inset:0;
+  z-index:1200;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  background:rgba(8,5,3,0);
+  opacity:0;
+  transition:opacity .22s ease,background .22s ease;
+}
+.game-event-overlay.show{opacity:1;background:rgba(8,5,3,.54);pointer-events:auto}
+.game-event-card{
+  width:min(760px,88vw);
+  padding:28px 28px 26px;
+  border-radius:24px;
+  border:2px solid #d9ad57;
+  background:radial-gradient(circle at 50% 0,#4b3420 0,#23170f 56%,#130d09 100%);
+  
+  text-align:center;
+  transform:scale(.72) translateY(25px);
+  transition:transform .32s cubic-bezier(.16,1.25,.3,1),opacity .2s ease;
+}
+.game-event-overlay.show .game-event-card{transform:scale(1) translateY(0)}
+.event-kicker{
+  font:900 .78rem/1 Arial,sans-serif;
+  letter-spacing:.22em;
+  color:#e3b95f;
+  margin-bottom:10px;
+}
+.event-title{
+  
+  font-weight:900;
+  font-size:clamp(2rem,6vw,4.5rem);
+  line-height:.95;
+  color:#ffe29a;
+  text-shadow:0 4px 0 #4d2d12,0 0 24px rgba(244,185,66,.36);
+}
+.event-subtitle{
+  margin-top:14px;
+  color:#e6d4bf;
+  font:700 1rem/1.35 Arial,sans-serif;
+}
+.event-card-row{
+  
+  
+  
+  
+  margin:22px auto 6px;
+  
+}
+.event-show-card.game-card.small{
+  
+  height:82px;
+  transform:rotate(var(--event-tilt,0deg));
+  box-shadow:0 8px 18px rgba(0,0,0,.42);
+}
+.event-show-card:nth-child(odd){--event-tilt:-3deg}
+.event-show-card:nth-child(even){--event-tilt:3deg}
+.rage-event .game-event-card{
+  border-color:#e6532e;
+  background:radial-gradient(circle at 50% 0,#6b1d12 0,#2a110d 50%,#100908 100%);
+  box-shadow:0 30px 90px rgba(0,0,0,.7),0 0 55px rgba(235,65,28,.28);
+}
+.rage-event .event-kicker{color:#ff9c6d}
+.rage-event .event-title{color:#ffd1bc;text-shadow:0 4px 0 #65180f,0 0 28px rgba(255,63,22,.48)}
+.rage-overlay-bar{
+  width:min(520px,82%);
+  margin:24px auto 8px;
+  gap:7px;
+}
+.rage-overlay-bar i{height:22px;border-radius:5px}
+.runner-event .event-card-row{perspective:800px}
+.runner-event .game-event-card{border-color:#e2bc58;box-shadow:0 30px 90px rgba(0,0,0,.68),0 0 60px rgba(230,186,67,.28)}
+
+@media(max-width:760px){
+  .opponent-status-slot{height:31px;min-height:31px}
+  .rage-meter{gap:4px;font-size:.56rem}
+  .rage-segments{gap:2px}
+  .game-event-card{padding:22px 14px 20px}
+  .event-card-row{gap:3px;overflow:hidden}
+  .event-show-card.game-card.small{width:43px;height:61px}
+}
+
+/* v22.2 persistent upgrade/rage popups */
+.event-dismiss{margin-top:20px;min-width:150px;font-weight:800;letter-spacing:.06em;pointer-events:auto;position:relative;z-index:2}
+
+
+/* ============================================================
+   v22.4 — TABLETOP VISUAL OVERHAUL
+   Visual-only: preserve v22.3.1 gameplay and updated Grant AI.
+   ============================================================ */
+
+:root{
+  --table-edge:#4c2714;
+  --table-mid:#754022;
+  --table-light:#965934;
+  --felt:#171a1f;
+  --felt2:#0d1116;
+  --cream:#fff3d4;
+  --gold-ui:#edae45;
+  --orange-ui:#dc742a;
+}
+
+/* Real game-table atmosphere */
+body{
+  font-family:Trebuchet MS,Arial,sans-serif;
+  
+}
+body:not(.home-mode)::before{
+  content:"";
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  
+  
+}
+main{max-width:1680px;padding:15px 18px 20px}
+
+/* Chunky wooden header / game shelf */
+.topbar{
+  
+  
+  border:0;
+  
+  
+  
+}
+
+
+.topbar h1{
+  font-family:"Cooper Black","Arial Black",Impact,sans-serif;
+  
+  letter-spacing:.02em;
+  
+  
+  
+}
+.top-actions button,.turn-counter,.fast-bots{
+  
+  border:2px solid #c98531;
+  box-shadow:0 4px 0 #1e0d06,0 7px 13px rgba(0,0,0,.28),inset 0 0 0 1px rgba(255,223,150,.13);
+  color:#f7ecd5;
+}
+
+/* Desktop game: table + side game log */
+#gameScreen{
+  
+  grid-template-columns:minmax(0,1fr) 300px;
+  gap:16px;
+  align-items:start;
+}
+
+.table-layout{gap:13px}
+.log-panel{
+  
+  
+  
+  
+  
+  border:2px solid #d18a36!important;
+  background:linear-gradient(180deg,#171c24,#0c1118)!important;
+  box-shadow:0 8px 0 rgba(45,18,7,.62),0 18px 36px rgba(0,0,0,.35),inset 0 0 0 2px rgba(255,255,255,.025)!important;
+}
+.log-head h3{
+  font-family:"Arial Black",Impact,sans-serif;
+  font-size:1.15rem;
+  letter-spacing:.025em;
+  color:#f6ead5;
+}
+.log{
+  
+  background:linear-gradient(#10151c,#0b0f14);
+  border:1px solid #313c48;
+  box-shadow:inset 0 4px 18px rgba(0,0,0,.35);
+}
+.log div{padding:7px 3px;border-bottom:1px solid rgba(130,163,190,.12)}
+
+/* Panels now feel like player trays instead of website boxes */
+#gameScreen .panel{
+  border:2px solid #8d531f;
+  background:
+    radial-gradient(ellipse at 50% 0,rgba(255,255,255,.045),transparent 48%),
+    linear-gradient(180deg,#1c2027,#101319);
+  border-radius:16px;
+  box-shadow:0 7px 0 rgba(53,23,9,.62),0 14px 24px rgba(0,0,0,.26),inset 0 0 0 1px rgba(240,173,74,.10);
+}
+.opponents{gap:13px}
+.opponent{
+  
+  
+  position:relative;
+  
+}
+.opponent::after{
+  
+  position:absolute;
+  right:12px;
+  font:800 .55rem/1 Arial,sans-serif;
+  letter-spacing:.11em;
+}
+.opponent.current-turn{
+  outline:0;
+  border-color:#f2b34c!important;
+  box-shadow:0 7px 0 #52260c,0 0 0 2px rgba(255,189,76,.18),0 0 24px rgba(255,173,55,.28)!important;
+}
+.opp-avatar{
+  width:58px;height:58px;flex-basis:58px;
+  border:3px solid #b8792e;
+  background:#f0dfb7;
+  box-shadow:0 3px 0 #3b1a0b,0 6px 12px rgba(0,0,0,.35);
+}
+.opp-name{font-family:"Arial Black",Impact,sans-serif;color:#fff5df;font-size:.95rem}
+.opponent .meta{color:#cdd4dd}
+.mini-hand{min-height:56px;align-items:end}
+
+/* Central board is intentionally open, like cards sitting on the wood. */
+.center-zone{
+  
+  
+  border-color:rgba(134,74,27,.32)!important;
+  background:
+    radial-gradient(ellipse at 50% 48%,rgba(255,189,102,.06),transparent 42%),
+    linear-gradient(180deg,rgba(52,27,15,.24),rgba(29,15,8,.10))!important;
+  box-shadow:inset 0 0 50px rgba(48,19,6,.13)!important;
+}
+.center-zone::before{
+  
+  color:rgba(255,232,196,.13);
+  font:900 .62rem/1 "Arial Black",sans-serif;
+  letter-spacing:.28em;
+}
+
+.pile-wrap .label{
+  font-family:"Arial Black",Impact,sans-serif;
+  letter-spacing:.08em;
+  color:#f6dab0;
+  text-shadow:0 2px 3px rgba(0,0,0,.8);
+}
+.pile{
+  
+  border:2px solid #352014;
+  border-radius:11px;
+  box-shadow:4px 5px 0 #22140c,8px 9px 0 rgba(25,12,7,.55),0 15px 20px rgba(0,0,0,.28);
+}
+.card-back{
+  background:
+    radial-gradient(circle at center,rgba(210,166,95,.16) 0 16%,transparent 17%),
+    repeating-linear-gradient(45deg,#27364c 0 8px,#1d2a3c 8px 16px);
+  box-shadow:4px 5px 0 #182437,8px 9px 0 #121b28,12px 13px 0 rgba(10,14,20,.65),0 18px 26px rgba(0,0,0,.3);
+}
+.card-back:after{
+  content:"✦";
+  transform:none;
+  font-size:2.1rem;
+  color:rgba(199,220,238,.28);
+  text-shadow:0 1px 0 rgba(255,255,255,.18);
+}
+.out-pile{
+  overflow:visible;
+  background:linear-gradient(145deg,#d8c4a0,#8c6742);
+  
+}
+.out-pile::before{
+  
+  position:absolute;inset:1px;
+  background:linear-gradient(145deg,#bba887,#725234);
+  border:2px solid #3c2515;border-radius:10px;
+  transform:translate(-9px,7px) rotate(-6deg);
+  z-index:-1;
+}
+.out-pile:after{
+  content:"TRASH";
+  font:900 .82rem/1 "Arial Black",sans-serif;
+  letter-spacing:.08em;color:#3d2415;
+}
+
+.last-played-by{color:#f6cd8d;font-weight:800}
+.status{
+  max-width:780px;
+  min-height:32px;
+  padding:7px 14px;
+  border-radius:12px;
+  color:#fff2cf;
+  background:rgba(25,18,13,.5);
+  border:1px solid rgba(218,161,76,.28);
+  font-weight:700;
+}
+.action-bar button{
+  min-width:148px;
+  border:2px solid #b36b2a;
+  background:linear-gradient(#313844,#171d25);
+  box-shadow:0 4px 0 #2a1409,0 7px 12px rgba(0,0,0,.3);
+  font-weight:800;
+}
+.action-bar .primary{
+  background:linear-gradient(#cf7c2d,#8f4116);
+  border-color:#f2b25b;
+}
+
+/* Your tray */
+.you{
+  padding:14px 16px 17px;
+  background:
+    linear-gradient(180deg,rgba(32,37,45,.98),rgba(15,18,23,.99))!important;
+  overflow:visible;
+}
+.you-head{padding-bottom:3px;border-bottom:1px solid rgba(255,216,154,.13)}
+.you h2{
+  font-family:"Arial Black",Impact,sans-serif;
+  color:#fff2d1;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.you .label{color:#e8c995;font-weight:800}
+
+.hand-row,.pantry-row{
+  gap:7px;
+  min-height:142px;
+  align-items:flex-end;
+  overflow:visible;
+}
+.hand-row{justify-content:center;padding:10px 7px 2px}
+
+
+/* Physical card redesign using the supplied pest drawings */
+.game-card{
+  --card-tilt:0deg;
+  width:94px;
+  border:3px solid #221914;
+  
+  
+  color:#21150e;
+  background:#f0e4c7;
+  box-shadow:0 4px 0 rgba(45,27,17,.78),0 8px 14px rgba(0,0,0,.30);
+  transition:transform .13s ease,box-shadow .13s ease,filter .13s ease;
+  transform:rotate(var(--card-tilt));
+}
+.game-card::before{
+  content:"";
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    repeating-radial-gradient(circle at 20% 20%,rgba(90,51,23,.035) 0 1px,transparent 1px 4px),
+    linear-gradient(180deg,rgba(255,255,255,.28),transparent 26%,rgba(61,30,12,.08));
+  mix-blend-mode:multiply;
+}
+.card-inner-rim{
+  position:absolute;inset:4px;pointer-events:none;
+  border:2px solid rgba(255,255,255,.82);
+  border-radius:8px;
+  box-shadow:inset 0 0 0 1px rgba(45,21,11,.16);
+}
+
+
+
+
+
+.game-card .num{
+  z-index:5;
+  left:8px;
+  font:900 1.28rem/1 "Arial Black",Impact,sans-serif;
+  color:#fff9eb;
+  
+  
+}
+
+.game-card .pest{
+  z-index:5;
+  top:7px;
+  font:900 .66rem/1 "Arial Black",Impact,sans-serif;
+  text-transform:uppercase;
+  letter-spacing:.015em;
+  color:#392114;
+  text-shadow:0 1px rgba(255,255,255,.45);
+}
+.card-art-frame{
+  position:absolute;
+  z-index:3;
+  
+  display:grid;place-items:center;
+}
+.card-art{
+  display:block;
+  
+  
+  filter:drop-shadow(0 2px 1px rgba(56,30,15,.20));
+  pointer-events:none;
+}
+.game-card .effect{
+  z-index:5;
+  left:9px;right:9px;bottom:9px;
+  padding:2px 12px 2px 2px;
+  font:800 .46rem/1.05 Arial,sans-serif;
+  color:#321d13;
+  text-align:center;
+  text-shadow:0 1px rgba(255,255,255,.38);
+}
+.game-card .icon{display:none}
+
+.game-card.pest-6 .pest,.game-card.pest-4 .pest{left:22px;right:22px;font-size:.61rem}
+
+/* slight physical imperfection without disturbing game state */
+.hand-row>.game-card:nth-child(6n/**/+1){--card-tilt:-1.7deg}
+.hand-row>.game-card:nth-child(6n/**/+2){--card-tilt:.8deg}
+.hand-row>.game-card:nth-child(6n/**/+3){--card-tilt:-.6deg}
+.hand-row>.game-card:nth-child(6n/**/+4){--card-tilt:1.4deg}
+.hand-row>.game-card:nth-child(6n/**/+5){--card-tilt:-1deg}
+.hand-row>.game-card:nth-child(6n){--card-tilt:.5deg}
+.game-card.clickable:hover{
+  transform:translateY(-9px) rotate(0deg) scale(1.02);
+  box-shadow:0 5px 0 rgba(45,27,17,.78),0 13px 20px rgba(0,0,0,.36);
+  z-index:20;
+}
+.game-card.selected{
+  transform:translateY(-13px) rotate(0) scale(1.035);
+  box-shadow:0 0 0 3px #ffe17c,0 0 22px rgba(255,210,80,.55),0 13px 20px rgba(0,0,0,.38);
+  z-index:24;
+}
+.known-card{height:67px;border-width:2px;border-radius:7px;}
+.known-card .pest{display:none}
+.known-card .effect{display:none}
+
+.known-card .num{left:3px;-webkit-text-stroke:.5px #2a160d;}
+
+
+/* Better card back: blue game-deck look */
+.face-down{
+  background:
+    radial-gradient(circle at center,rgba(194,218,239,.12) 0 16%,transparent 17%),
+    repeating-linear-gradient(45deg,#334968 0 8px,#243853 8px 16px)!important;
+  border-color:#182538;
+  box-shadow:0 4px 0 #152238,0 8px 12px rgba(0,0,0,.30);
+}
+.face-down .card-inner-rim{border-color:rgba(216,230,245,.34);box-shadow:inset 0 0 0 1px rgba(6,14,26,.35)}
+.face-down .icon{
+  display:grid!important;
+  inset:0;
+  font-size:1.7rem;
+  color:rgba(215,228,241,.26);
+}
+.face-down .card-art-frame{display:none}
+
+/* Modals now look like game-box inserts */
+.modal{backdrop-filter:blur(2px)}
+.modal-card{
+  border:2px solid #b9772d;
+  background:linear-gradient(180deg,#21262e,#10141a);
+  box-shadow:0 14px 0 rgba(57,24,9,.62),0 30px 80px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,219,155,.08);
+}
+.modal-card h2,.modal-card h3{font-family:"Arial Black",Impact,sans-serif}
+.rules table{background:#0e1319;border-radius:8px;overflow:hidden}
+.rules td,.rules th{border-color:#303943}
+
+/* Home screen: title uses one unified pop animation and a bolder game-logo font. */
+.home-mode .topbar{background:rgba(29,14,7,.78)}
+.setup-screen{
+  background-image:
+    radial-gradient(ellipse at center,rgba(18,10,5,.03) 0 40%,rgba(17,8,3,.62) 100%),
+    linear-gradient(rgba(23,13,7,.05),rgba(23,13,7,.25)),
+    url("assets/home-bg.png");
+  background-size:cover;
+  background-position:center 45%;
+}
+.title-intro{
+  
+  background:radial-gradient(ellipse at center,rgba(12,7,3,.08),rgba(10,5,2,.38));
+}
+.intro-word{
+  font-family:"Cooper Black","Rockwell Extra Bold","Arial Black",Impact,sans-serif;
+  color:#f7a92f;
+  letter-spacing:.015em;
+  -webkit-text-stroke:clamp(1px,.18vw,3px) #54200e;
+  text-shadow:
+    0 4px 0 #8c3a13,
+    0 8px 0 #3b180b,
+    0 12px 20px rgba(0,0,0,.62);
+  
+  
+  
+}
+
+
+
+
+
+
+
+.intro-mid-row{min-height:auto;}
+.intro-start{
+  margin-top:18px;
+  font-family:"Arial Black",Impact,sans-serif;
+  letter-spacing:.06em;
+  color:#fff3d2!important;
+  
+  border:3px solid #f4bd68!important;
+  box-shadow:0 6px 0 #53230e,0 11px 20px rgba(0,0,0,.38);
+}
+.setup-panel{
+  border:3px solid #c78432;
+  background:linear-gradient(180deg,rgba(25,29,36,.96),rgba(12,16,21,.97));
+  box-shadow:0 8px 0 rgba(48,20,8,.72),0 24px 60px rgba(0,0,0,.42);
+}
+.setup-panel h2{
+  margin-top:0;
+  font-family:"Cooper Black","Arial Black",Impact,sans-serif;
+  font-size:2rem;
+  color:#ffc759;
+  text-shadow:0 3px 0 #5a2510;
+}
+.bot-config{
+  border:2px solid #7d4a24;
+  background:linear-gradient(#222832,#12171e);
+  box-shadow:0 4px 0 rgba(51,22,9,.58);
+}
+.bot-preview-img{border:3px solid #c8802f;box-shadow:0 4px 0 #3b1a0b,0 9px 15px rgba(0,0,0,.32)}
+.bot-config select{
+  border:2px solid #805129;
+  background:#0f151c;
+  font-weight:800;
+}
+.bot-description{color:#cbd2dc}
+.home-actions .big{
+  border:2px solid #d68f38;
+  box-shadow:0 4px 0 #3c1809;
+  font-family:"Arial Black",Impact,sans-serif;
+}
+
+/* Event overlays inherit the stronger game-box look */
+.game-event-card{
+  border-width:3px;
+  box-shadow:0 9px 0 rgba(45,18,7,.62),0 35px 90px rgba(0,0,0,.67),0 0 44px rgba(212,163,72,.18);
+}
+.event-title{
+  font-family:"Cooper Black","Arial Black",Impact,sans-serif;
+  letter-spacing:.01em;
+}
+
+/* Responsive: keep the physical look without crushing the play area */
+@media(max-width:1180px){
+  #gameScreen{grid-template-columns:1fr}
+  .log-panel{position:relative;top:auto;min-height:0}
+  .log{height:190px}
+}
+@media(max-width:900px){
+  .game-card{width:84px;height:120px}
+  .hand-row,.pantry-row{min-height:128px}
+  .pile-wrap{gap:25px}
+}
+@media(max-width:760px){
+  main{padding:10px}
+  #gameScreen{gap:10px}
+  .opponents{grid-template-columns:1fr}
+  .center-zone{padding:18px 8px}
+  .pile-wrap{grid-template-columns:86px 90px 86px;gap:13px}
+  .pile{width:78px;height:110px}
+  .game-card{width:72px;height:103px;border-width:2px}
+  .game-card .pest{font-size:.52rem;top:5px}
+  .card-art-frame{inset:19px 5px 25px}
+  .game-card .effect{font-size:.36rem;bottom:6px;left:5px;right:5px}
+  .game-card .num{font-size:.92rem}
+  .hand-row,.pantry-row{gap:4px}
+  .setup-panel{padding:22px 12px}
+}
+
+/* v22.4 homepage title: same exit behavior for all title words as well. */
+.title-intro.intro-exit .intro-word{
+  --exit-tilt:0deg!important;
+}
+
+/* ============================================================
+   v22.5 — USER POLISH PASS
+   ============================================================ */
+
+/* Smaller mascot + much slimmer utility bar. */
+
+
+
+
+
+
+
+/* Home title sits low on the table instead of covering the pests' faces. */
+.title-intro{
+  justify-content:flex-end!important;
+  padding:0 18px 4.2vh!important;
+  
+  background:linear-gradient(180deg,rgba(10,5,2,.02) 0 52%,rgba(10,5,2,.18) 78%,rgba(10,5,2,.42) 100%)!important;
+}
+
+.intro-in,.intro-the{line-height:.9!important;}
+
+.intro-start{margin-top:8px!important;}
+@media(min-width:1000px){
+  .setup-screen{background-position:center 42%!important}
+  .title-intro{padding-bottom:3vh!important}
+}
+
+/* Put the log back below the whole play table. */
+#gameScreen{display:block!important}
+#gameScreen.hidden{display:none!important}
+.log-panel{
+  position:relative!important;
+  top:auto!important;
+  margin:22px 0 6px!important;
+  min-height:0!important;
+  padding:13px!important;
+}
+.log{height:220px!important}
+
+/* Opponent trays: larger cards, much less dead air between hand and Pantry. */
+
+.mini-hand{
+  min-height:60px!important;
+  height:auto!important;
+  margin-top:4px!important;
+  margin-bottom:2px!important;
+  
+  align-items:flex-end!important;
+}
+.mini-card{
+  
+  
+  
+  box-shadow:0 3px 0 #152238,0 6px 9px rgba(0,0,0,.27)!important;
+}
+.opponent-status-slot:empty{
+  
+  
+  margin:0!important;
+  overflow:hidden!important;
+}
+.opponent-status-slot:not(:empty){margin:3px 0!important}
+.opponent .pantry-row{
+  
+  
+  margin-top:0!important;
+  gap:5px!important;
+  align-items:flex-end!important;
+}
+.opponent .pantry-row .known-card,
+.revealed-opponent-hand .known-card{
+  width:58px!important;
+  height:83px!important;
+}
+.opponent::after{right:9px!important;}
+
+/* Human cards get a healthy size bump. */
+.you{padding-bottom:22px!important}
+.hand-row,.you .pantry-row{
+  min-height:166px!important;
+  gap:8px!important;
+}
+
+
+/* Bigger, cleaner physical piles / play-area cards. */
+.center-zone{min-height:340px!important;padding:24px 24px 22px!important}
+
+.pile{
+  width:116px!important;
+  height:162px!important;
+}
+
+.current-pile-column .pile{
+  width:126px!important;
+  height:178px!important;
+}
+.current-pile-column .pile .game-card{
+  width:126px!important;
+  height:178px!important;
+}
+/* Trash should be one clean pile, not offset fake cards. */
+.out-pile{transform:none!important}
+.out-pile::before{display:none!important;content:none!important}
+
+/* Card face: no printed power text. Art is centered and names always stay on-card. */
+
+.game-card .pest{
+  top:8px!important;
+  
+  
+  
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+  
+  
+  letter-spacing:0!important;
+}
+.game-card.pest-S .pest,.spider-card .pest{font-size:.50rem!important}
+.game-card.pest-6 .pest,.game-card.pest-4 .pest,.game-card.pest-10 .pest{font-size:.55rem!important}
+.card-art-frame{
+  
+  display:grid!important;
+  place-items:center!important;
+}
+.card-art{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:50% 50%!important;
+}
+.game-card .effect{display:none!important}
+
+/* Small cards keep readable names instead of hiding/misplacing them. */
+.known-card .pest{
+  display:flex!important;
+  
+  
+  
+  
+  
+}
+
+
+
+
+/* Hover power description — replaces printed effect text. */
+.game-card[data-effect]::after{
+  content:attr(data-effect);
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 9px);
+  z-index:90;
+  width:max-content;
+  max-width:220px;
+  padding:7px 9px;
+  border:1px solid #d99641;
+  border-radius:8px;
+  background:linear-gradient(#20262e,#10151b);
+  box-shadow:0 5px 0 rgba(50,21,8,.7),0 10px 24px rgba(0,0,0,.38);
+  color:#fff0d2;
+  font:700 .68rem/1.25 Arial,sans-serif;
+  text-align:center;
+  white-space:normal;
+  opacity:0;
+  pointer-events:none;
+  transform:translate(-50%,5px) scale(.96);
+  transition:opacity .10s ease,transform .10s ease;
+}
+.game-card[data-effect]:hover::after{
+  opacity:1;
+  transform:translate(-50%,0) scale(1);
+}
+
+/* Selected cards stay visibly selected even while hovered. */
+.game-card.clickable.selected,
+.game-card.clickable.selected:hover{
+  transform:translateY(-13px) rotate(0deg) scale(1.045)!important;
+  box-shadow:0 0 0 3px #ffe17c,0 0 25px rgba(255,210,80,.64),0 14px 22px rgba(0,0,0,.40)!important;
+  filter:brightness(1.035)!important;
+  z-index:28!important;
+}
+
+/* Large, quick Spider / Pest Control hit for every player. */
+.spider-play-flash{
+  position:fixed;
+  inset:0;
+  z-index:2500;
+  display:grid;
+  place-items:center;
+  pointer-events:none;
+  overflow:hidden;
+  background:rgba(7,8,11,0);
+  opacity:0;
+  transition:opacity .13s ease,background .13s ease;
+}
+.spider-play-flash.show{opacity:1;}
+.spider-play-flash.hide{opacity:0}
+.spider-flash-burst{
+  position:absolute;
+  width:min(62vw,720px);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:
+    repeating-conic-gradient(from 5deg,rgba(245,232,199,.16) 0 3deg,transparent 3deg 16deg),
+    radial-gradient(circle,rgba(222,209,181,.20) 0 19%,rgba(88,75,59,.16) 20% 34%,transparent 35%);
+  transform:scale(.18) rotate(-15deg);
+  animation:spiderBurst .72s cubic-bezier(.16,1,.3,1) both;
+}
+.spider-flash-art{
+  position:relative;
+  z-index:2;
+  
+  
+  object-fit:contain;
+  filter:drop-shadow(0 10px 3px rgba(0,0,0,.55));
+  animation:spiderCardSlam .72s cubic-bezier(.13,1.5,.28,1) both;
+}
+.spider-flash-copy{
+  position:absolute;
+  z-index:3;
+  top:68%;
+  text-align:center;
+  transform:rotate(-2deg);
+  text-shadow:0 4px 0 #17110c,0 9px 18px rgba(0,0,0,.7);
+  animation:spiderTextPop .72s cubic-bezier(.13,1.45,.25,1) both;
+}
+.spider-flash-player{font:900 clamp(.9rem,2vw,1.35rem)/1 "Arial Black",Impact,sans-serif;color:#e7d7ba;letter-spacing:.04em}
+.spider-flash-title{margin-top:4px;font:900 clamp(2.1rem,6vw,5rem)/.9 "Cooper Black","Arial Black",Impact,sans-serif;color:#f2e4c5;-webkit-text-stroke:2px #251b14;letter-spacing:.02em}
+@keyframes spiderBurst{0%{opacity:0;transform:scale(.12) rotate(-20deg)}35%{opacity:1}100%{opacity:.7;transform:scale(1.35) rotate(15deg)}}
+@keyframes spiderCardSlam{0%{opacity:0;transform:translateY(-42px) scale(.3) rotate(-22deg)}48%{opacity:1;transform:translateY(7px) scale(1.16) rotate(5deg)}70%{transform:translateY(0) scale(.98) rotate(-2deg)}100%{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+@keyframes spiderTextPop{0%,35%{opacity:0;transform:translateY(18px) scale(.6) rotate(-2deg)}62%{opacity:1;transform:translateY(0) scale(1.1) rotate(-2deg)}100%{opacity:1;transform:translateY(0) scale(1) rotate(-2deg)}}
+
+/* Adapt the bigger cards without undoing the desktop sizing. */
+@media(max-width:1050px){
+  .you .game-card{width:94px!important;height:134px!important}
+  .hand-row,.you .pantry-row{min-height:146px!important}
+  .pile-wrap{grid-template-columns:112px 122px 112px!important;gap:28px!important}
+  .pile{width:100px!important;height:140px!important}
+  .current-pile-column .pile,.current-pile-column .pile .game-card{width:108px!important;height:153px!important}
+}
+@media(max-width:760px){
+  .topbar{min-height:40px!important;padding:3px 8px!important}
+  
+  .topbar h1{font-size:.92rem!important}
+  .title-intro{padding-bottom:2vh!important}
+  .intro-pests,.intro-pantry{font-size:clamp(2.2rem,12vw,4.2rem)!important}
+  .opponent .pantry-row .known-card,.revealed-opponent-hand .known-card{width:52px!important;height:74px!important}
+  .you .game-card{width:78px!important;height:112px!important}
+  .hand-row,.you .pantry-row{min-height:122px!important}
+  .card-art-frame{inset:18px 4px 10px!important}
+  .game-card .pest{top:5px!important;left:18px!important;right:18px!important;font-size:.46rem!important}
+  .game-card[data-effect]::after{max-width:170px;font-size:.59rem}
+}
+
+
+/* ============================================================
+   v22.6 — TABLETOP POLISH II
+   ============================================================ */
+
+/* A warmer honey-colored table separates the board from the dark top bar. */
+body{
+  background:
+    radial-gradient(ellipse at 50% 8%,rgba(255,199,122,.18),transparent 42%),
+    repeating-linear-gradient(1deg,rgba(255,255,255,.014) 0 1px,transparent 1px 9px),
+    linear-gradient(90deg,#6a351b 0%,#91552d 20%,#a15f34 50%,#8a4d28 80%,#653219 100%)!important;
+}
+
+.topbar,
+.home-mode .topbar{
+  min-height:58px!important;
+  padding:6px 16px!important;
+  background:
+    linear-gradient(180deg,rgba(18,20,25,.98),rgba(10,12,16,.98))!important;
+  border-bottom:3px solid #a36128!important;
+  box-shadow:0 5px 0 rgba(48,20,8,.62),0 10px 22px rgba(0,0,0,.32)!important;
+}
+
+
+.topbar h1{font-size:1.22rem!important}
+.top-actions button,.turn-counter,.fast-bots{
+  font-size:.79rem!important;
+  padding:.4rem .62rem!important;
+}
+.turn-counter{min-width:70px!important}
+
+/* Home art fills the entire viewport and is zoomed slightly closer. */
+.home-mode main{
+  max-width:none!important;
+  width:100%!important;
+  
+  
+  padding:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+}
+.home-mode .setup-screen{
+  position:relative!important;
+  width:100%!important;
+  
+  
+  margin:0!important;
+  padding:0!important;
+  background:none!important;
+  isolation:isolate;
+}
+.home-mode .setup-screen::before{
+  
+  
+  
+  
+  background:url("assets/home-bg.png") center 42% / cover no-repeat;
+}
+
+
+/* Home sequence: huge centered title -> pause -> fade away -> centered Start button. */
+.title-intro{
+  inset:0!important;
+  padding:0!important;
+  justify-content:center!important;
+  
+  background:rgba(7,4,2,.05)!important;
+}
+
+.intro-in,.intro-the{
+  
+  line-height:.8!important;
+}
+.intro-mid-row{gap:clamp(20px,4vw,60px)!important}
+
+
+
+
+
+.intro-start{
+  position:absolute!important;
+  left:50%!important;
+  top:50%!important;
+  margin:0!important;
+  padding:1rem 3rem!important;
+  font-size:1.6rem!important;
+  opacity:0;
+  pointer-events:none;
+  transform:translate(-50%,-45%) scale(.92);
+  
+}
+
+
+
+
+/* Cards: two top-corner numbers, larger art, name near bottom, one even paper color. */
+.game-card{
+  overflow:visible!important;
+}
+.game-card.green{background:linear-gradient(180deg,#cce4b9,#bfdba9)!important}
+.game-card.red{background:linear-gradient(180deg,#efb4aa,#e7a195)!important}
+.game-card.blue{background:linear-gradient(180deg,#bcdbea,#a9cede)!important}
+.game-card.gold{background:linear-gradient(180deg,#ffe59c,#f6d77d)!important}
+.game-card.spider-card{background:linear-gradient(180deg,#eee9df,#ddd8ce)!important;color:#211914!important}
+.game-card .num{
+  
+  bottom:auto!important;
+  z-index:8!important;
+  
+}
+.game-card .num-left{right:auto!important;transform:none!important;}
+.game-card .num-right{left:auto!important;transform:none!important;}
+.game-card .pest{
+  top:auto!important;
+  
+  
+  
+  
+  
+  
+  font-family:"Arial Black",Impact,sans-serif!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  color:#352014!important;
+}
+
+.card-art-frame{
+  inset:23px 5px 29px!important;
+  overflow:visible!important;
+}
+.card-art{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  
+  transform-origin:center;
+}
+ /* Beetle */
+ /* Termite */
+
+
+.card-inner-rim{
+  z-index:2!important;
+}
+
+/* Small cards keep the same design hierarchy. */
+.known-card .num{font-size:.76rem!important;top:3px!important}
+.known-card .num-left{left:4px!important}
+.known-card .num-right{right:4px!important}
+.known-card .pest{
+  top:auto!important;
+  bottom:3px!important;
+  left:3px!important;
+  right:3px!important;
+  height:10px!important;
+  font-size:.39rem!important;
+}
+
+.known-card .card-art-frame{inset:12px 1px 13px!important}
+
+
+
+
+/* Counts sit lower beneath the physical piles. */
+.pile-wrap .count{
+  margin-top:12px!important;
+  line-height:1!important;
+}
+.current-pile-column .count{margin-top:13px!important}
+
+/* Bigger opponent Pantry cards, fixed-height opponent trays, overlapping hands. */
+
+.mini-hand{
+  height:77px!important;
+  min-height:77px!important;
+  max-height:77px!important;
+  margin:4px 0 1px!important;
+  
+  flex-wrap:nowrap!important;
+  
+  align-items:flex-end!important;
+  padding:0 2px!important;
+}
+.mini-hand .mini-card{
+  
+  height:72px!important;
+  flex:0 0 50px!important;
+}
+.mini-hand .mini-card + .mini-card{margin-left:-21px!important}
+.revealed-opponent-hand .known-card{
+  
+  height:88px!important;
+  
+}
+.revealed-opponent-hand .known-card + .known-card{margin-left:-33px!important}
+.opponent .pantry-row{
+  
+  
+  
+  margin-top:0!important;
+  gap:6px!important;
+  flex-wrap:nowrap!important;
+  align-items:flex-end!important;
+  overflow:visible!important;
+}
+.opponent .pantry-row .known-card{
+  
+  height:100px!important;
+  
+}
+.opponent-status-slot:empty{
+  margin:0!important;
+}
+.opponent-status-slot:not(:empty){
+  margin:1px 0!important;
+}
+
+/* Reaction emoji always sits above its speech-tail pointer. */
+.opp-avatar-wrap{overflow:visible!important}
+.bot-reaction-bubble{
+  
+  left:39px!important;
+  top:-27px!important;
+  min-width:45px!important;
+  height:41px!important;
+  font-size:1.7rem!important;
+}
+.bot-reaction-bubble span{
+  position:relative;
+  z-index:3;
+  display:block;
+  line-height:1;
+}
+.bot-reaction-bubble:after{
+  z-index:1!important;
+}
+
+/* A longer, more readable Spider hit. */
+.spider-play-flash.show{background:rgba(6,7,10,.54)!important}
+.spider-flash-burst{
+  animation-duration:.95s!important;
+}
+.spider-flash-art{
+  width:min(38vw,390px)!important;
+  max-height:50vh!important;
+  animation-duration:.95s!important;
+}
+.spider-flash-copy{animation-duration:.95s!important}
+
+/* The whole discard pile visibly slides into Trash instead of blinking away. */
+.pile-swipe-ghost{
+  position:fixed!important;
+  z-index:2300!important;
+  pointer-events:none!important;
+  margin:0!important;
+  transform-origin:center;
+  transition:transform .68s cubic-bezier(.20,.76,.22,1),opacity .18s ease;
+  filter:drop-shadow(0 14px 8px rgba(0,0,0,.42));
+}
+.pile-swipe-ghost::before,
+.pile-swipe-ghost::after{
+  content:"";
+  position:absolute;
+  inset:3px;
+  border:2px solid #3c291b;
+  border-radius:11px;
+  background:#d7c19d;
+  z-index:-1;
+}
+.pile-swipe-ghost::before{transform:translate(-6px,5px) rotate(-3deg)}
+.pile-swipe-ghost::after{transform:translate(-10px,9px) rotate(2deg);z-index:-2}
+.pile-swipe-ghost .game-card{
+  width:100%!important;
+  height:100%!important;
+  transform:none!important;
+  margin:0!important;
+}
+.pile-swipe-ghost.arrived{
+  opacity:.16!important;
+  transform-origin:center!important;
+}
+.out-pile.trash-catch{
+  animation:v226TrashCatch .28s ease both;
+}
+@keyframes v226TrashCatch{
+  0%{transform:scale(1)}
+  45%{transform:scale(1.08) rotate(-2deg);filter:brightness(1.22)}
+  100%{transform:scale(1)}
+}
+
+/* Keep desktop cards large and prevent old small-name overrides from winning. */
+
+
+.you .game-card .pest{font-size:.76rem!important}
+.you .game-card .num{font-size:1.28rem!important}
+
+/* Mobile / narrower layouts remain usable. */
+@media(max-width:1050px){
+  .opponent{height:218px!important;min-height:218px!important;max-height:218px!important}
+  .opponent .pantry-row .known-card{width:62px!important;height:89px!important}
+  .opponent .pantry-row{height:91px!important;min-height:91px!important;max-height:91px!important}
+}
+@media(max-width:760px){
+  .topbar{min-height:52px!important;padding:5px 9px!important}
+  
+  .home-mode main{height:calc(100vh - 52px)!important;min-height:calc(100vh - 52px)!important}
+  .intro-pests,.intro-pantry{font-size:clamp(4rem,18vw,6.8rem)!important}
+  .intro-in,.intro-the{font-size:clamp(2.2rem,9vw,3.7rem)!important}
+  .intro-start{font-size:1.3rem!important;padding:.85rem 2.2rem!important}
+  .opponent{
+    height:auto!important;
+    min-height:220px!important;
+    max-height:none!important;
+  }
+  .mini-hand{overflow:hidden!important}
+  .opponent .pantry-row .known-card{width:58px!important;height:83px!important}
+  .game-card .pest{font-size:.56rem!important;bottom:5px!important}
+  .game-card .num{font-size:.94rem!important}
+}
+
+
+/* ============================================================
+   v22.7 — SHELF + TABLETOP POLISH
+   ============================================================ */
+
+/* Real supplied wood artwork behind the full gameplay area. */
+body:not(.home-mode){
+  background-image:url("assets/table-wood.png")!important;
+  background-repeat:repeat-y!important;
+  background-size:100% auto!important;
+  background-position:center top!important;
+  background-color:#8a4d27!important;
+}
+body:not(.home-mode)::before{
+  background:linear-gradient(rgba(29,13,5,.035),rgba(29,13,5,.08))!important;
+  mix-blend-mode:multiply!important;
+}
+
+/* Infinite pantry-shelf top bar. */
+.topbar{
+  position:relative!important;
+  isolation:isolate!important;
+  min-height:64px!important;
+  height:64px!important;
+  padding:7px 16px!important;
+  overflow:hidden!important;
+  border-bottom:3px solid #32180d!important;
+  background:#2c1a10!important;
+  box-shadow:0 5px 0 rgba(52,22,8,.58),0 11px 24px rgba(0,0,0,.32)!important;
+}
+.topbar::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  background-image:url("assets/shelf-strip.jpg");
+  background-repeat:repeat-x;
+  background-size:auto 64px;
+  background-position:0 0;
+  animation:v227ShelfScroll 105s linear infinite;
+}
+.topbar::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(90deg,rgba(11,9,8,.34),rgba(13,10,8,.15) 30%,rgba(13,10,8,.15) 70%,rgba(11,9,8,.34)),
+             linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.30));
+}
+@keyframes v227ShelfScroll{
+  from{background-position-x:0}
+  to{background-position-x:-5620px}
+}
+.topbar>.brand,.topbar>.top-actions{position:relative;z-index:2}
+
+.topbar h1{
+  
+  font-family:"Cooper Black","Rockwell Extra Bold","Arial Black",Impact,sans-serif!important;
+  font-size:1.46rem!important;
+  line-height:.9!important;
+  text-transform:uppercase!important;
+  letter-spacing:.025em!important;
+  
+  
+  
+}
+.top-actions button,.turn-counter,.fast-bots{
+  background:rgba(12,15,20,.88)!important;
+  backdrop-filter:blur(1px);
+}
+
+/* Home intro: fix visibility and keep the intended title -> pause -> start sequence. */
+
+.title-intro .intro-word{
+  
+  visibility:visible!important;
+}
+.title-intro .intro-start{
+  opacity:0;
+  visibility:visible!important;
+}
+
+
+
+
+
+
+
+
+
+/* Opponent trays are tall enough for the larger hand + pantry cards. */
+
+.opponent::after{bottom:7px!important}
+.mini-hand{
+  
+  height:108px!important;
+  min-height:108px!important;
+  max-height:108px!important;
+  margin:5px 0 3px!important;
+  padding:0 3px!important;
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:flex-end!important;
+  
+  
+  
+}
+.mini-hand .mini-card{
+  height:78px!important;
+  flex:0 0 54px!important;
+  margin-left:0!important;
+}
+.revealed-opponent-hand .known-card{
+  height:97px!important;
+  
+  
+}
+/* No natural stacking. Only crowd when the hand actually gets large. */
+
+
+
+
+
+
+.opponent .pantry-row{
+  
+  
+  
+  margin-top:1px!important;
+  gap:7px!important;
+  overflow:visible!important;
+}
+.opponent .pantry-row .known-card{
+  
+  height:120px!important;
+  
+}
+
+.opponent-status-slot:not(:empty){height:29px!important;min-height:29px!important}
+
+/* Current play card uses the exact same physical pile/card footprint as Trash. */
+
+.pile,
+.current-pile-column .pile,
+.current-pile-column .pile .game-card{
+  width:122px!important;
+  height:171px!important;
+}
+.current-pile-column{
+  width:136px!important;
+}
+.current-pile-column .game-card .pest{
+  font-size:.74rem!important;
+  bottom:9px!important;
+}
+.current-pile-column .game-card .num{
+  font-size:1.28rem!important;
+}
+
+/* More breathing room between physical piles and their counts. */
+.pile-wrap .count,
+.current-pile-column .count{
+  margin-top:22px!important;
+}
+
+/* Pest art is a little larger everywhere. */
+.card-art{transform:scale(1.21)!important}
+
+
+
+
+.known-card .card-art{transform:scale(1.18)!important}
+.known-card.pest-7 .card-art{transform:scale(1.12)!important}
+.known-card.pest-8 .card-art{transform:scale(1.10)!important}
+
+/* Keep long Pest Control label fully inside every card size. */
+.game-card.pest-S .pest{
+  
+  letter-spacing:-.025em!important;
+}
+.known-card.pest-S .pest{
+  font-size:.29rem!important;
+  letter-spacing:-.035em!important;
+}
+.current-pile-column .game-card.pest-S .pest{font-size:.54rem!important}
+
+/* Revealed opponent cards must never be vertically clipped. */
+
+
+/* Responsive crowding gets a little stronger on narrower desktop widths. */
+@media(max-width:1200px){
+  .opponent{height:326px!important;min-height:326px!important;max-height:326px!important}
+  .opponent .pantry-row .known-card{width:76px!important;height:109px!important;flex-basis:76px!important}
+  .opponent .pantry-row{height:119px!important;min-height:119px!important;max-height:119px!important}
+  
+  
+  
+  
+}
+@media(max-width:760px){
+  .topbar{min-height:58px!important;height:58px!important;padding:6px 9px!important}
+  .topbar::before{background-size:auto 58px!important}
+  
+  .topbar h1{font-size:1.05rem!important}
+  .home-mode main{height:calc(100vh - 58px)!important;min-height:calc(100vh - 58px)!important}
+  .opponent{height:auto!important;min-height:320px!important;max-height:none!important}
+  .mini-hand{overflow:hidden!important}
+}
+
+
+/* ============================================================
+   v22.8 — PANTRY ENTRANCE + PROPORTIONAL CARD SYSTEM
+   ============================================================ */
+
+/* Home has NO top bar at all. */
+
+
+.home-mode .setup-screen{
+  height:100vh!important;min-height:100vh!important;
+  background-image:url("assets/home-pantry-off.png")!important;
+  background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;
+  overflow:hidden!important;
+}
+.home-mode .setup-screen::before{
+  content:""!important;position:absolute!important;inset:0!important;z-index:-2!important;
+  background-image:url("assets/home-pantry-off.png")!important;
+  background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important;
+  transform:scale(1);transition:none;
+}
+.home-mode .setup-screen::after{content:""!important;position:absolute!important;inset:0!important;z-index:-1!important;background:rgba(0,0,0,.05)!important;pointer-events:none!important}
+.home-mode .setup-screen.pantry-light-on::before{background-image:url("assets/home-pantry-on.png")!important}
+.home-mode .setup-screen.pantry-entering::before{animation:v228EnterPantry 1.05s cubic-bezier(.15,.72,.18,1) forwards!important}
+@keyframes v228EnterPantry{from{transform:scale(1)}to{transform:scale(2.75)}}
+
+/* Home title remains after popping in. Buttons fade in underneath it. */
+.title-intro{justify-content:center!important;background:transparent!important;}
+.intro-pests,.intro-pantry{font-size:clamp(5rem,12vw,10rem)!important;line-height:.82!important}
+.intro-in,.intro-the{font-size:clamp(2.8rem,5.4vw,4.8rem)!important}
+.intro-pests{animation:v228TitlePop .58s .08s cubic-bezier(.13,1.55,.26,1) forwards!important}
+.intro-in{animation:v228TitlePop .58s .35s cubic-bezier(.13,1.55,.26,1) forwards!important}
+.intro-the{animation:v228TitlePop .58s .56s cubic-bezier(.13,1.55,.26,1) forwards!important}
+.intro-pantry{animation:v228TitlePop .58s .82s cubic-bezier(.13,1.55,.26,1) forwards!important}
+
+.intro-home-actions{display:flex;gap:14px;animation:v228HomeButtons .65s 1.5s ease forwards;}
+
+.intro-start,.intro-rules{
+  position:static!important;transform:none!important;margin:0!important;opacity:1!important;pointer-events:auto!important;
+  min-width:150px;padding:.82rem 1.55rem!important;font:900 1.08rem/1 "Arial Black",Impact,sans-serif!important;
+  border:2px solid #d89a43!important;border-radius:12px!important;color:#fff0d3!important;
+  background:linear-gradient(#292f38,#11161d)!important;box-shadow:0 5px 0 #3d1a0c,0 9px 18px rgba(0,0,0,.35)!important;
+}
+.intro-start{background:linear-gradient(#e58a2d,#a74a16)!important;border-color:#ffc267!important}
+.intro-rules:hover,.intro-start:hover{transform:translateY(-2px)!important;filter:brightness(1.08)}
+
+/* Poof transitions between title, setup, and gameplay entrance. */
+.home-poof-out{animation:v228PoofOut .48s cubic-bezier(.55,.02,.75,.4) forwards!important;pointer-events:none!important}
+.home-poof-in{animation:v228PoofIn .52s cubic-bezier(.16,1.35,.28,1) forwards!important}
+
+
+.setup-panel.home-poof-in{display:block!important}
+
+/* Header brand items use the same framed treatment as the buttons. */
+.brand{gap:8px!important;align-items:center!important}
+
+.topbar h1{
+  display:flex!important;align-items:center!important;min-height:42px!important;margin:0!important;padding:0 13px!important;
+  border:2px solid #d09a45!important;border-radius:11px!important;background:linear-gradient(#292f38,#11161d)!important;
+  box-shadow:0 4px 0 #271208,0 7px 14px rgba(0,0,0,.32)!important;
+  color:#ffc14d!important;-webkit-text-stroke:1px #5b240c!important;text-shadow:0 2px 0 #a94614,0 4px 4px rgba(0,0,0,.55)!important;
+}
+
+/* Shelf scroll is more relaxed. */
+.topbar::before{animation-duration:175s!important}
+
+/* Move gameplay utility controls to the far right of the play area. */
+.center-zone{position:relative!important;}
+.play-utility-rail{
+  position:absolute;top:14px;width:185px;display:flex;flex-direction:column;align-items:stretch;z-index:12;
+}
+.play-utility-rail .fast-bots,.play-utility-rail .turn-counter{
+  width:100%!important;box-sizing:border-box!important;justify-content:center!important;text-align:center!important;
+  background:linear-gradient(#292f38,#11161d)!important;border:2px solid #c98b3d!important;border-radius:10px!important;
+  box-shadow:0 4px 0 rgba(51,22,9,.65)!important;padding:8px 9px!important;font-size:.76rem!important;color:#f4ead8!important;
+}
+.play-utility-rail .turn-counter{font-weight:900!important}
+
+/* Draw, Current, and Trash are exactly the same footprint and baseline. */
+.pile-wrap{grid-template-columns:repeat(3,132px)!important;gap:54px!important;align-items:start!important}
+.pile-wrap>div{width:132px!important;display:flex!important;flex-direction:column!important;align-items:center!important;position:relative!important}
+.pile-wrap .label{height:22px!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0 0 8px!important}
+.pile,.current-pile-column .pile,.current-pile-column .pile .game-card{width:122px!important;height:174px!important;box-sizing:border-box!important}
+.last-played-by{position:absolute!important;top:-23px!important;left:50%!important;transform:translateX(-50%)!important;white-space:nowrap!important;font-size:.7rem!important}
+.pile-wrap .count,.current-pile-column .count{margin-top:24px!important;min-height:18px!important}
+
+/* One proportional card system: content scales with the physical card in EVERY context. */
+.game-card{
+  container-type:inline-size!important;
+  aspect-ratio:94/134!important;
+  box-sizing:border-box!important;
+  border-width:2.1cqw!important;border-radius:10cqw!important;
+}
+
+
+
+
+.game-card .pest{letter-spacing:0!important;}
+.game-card.pest-S .pest{letter-spacing:-.02em!important;}
+
+
+
+
+/* Preserve one aspect ratio everywhere. */
+.known-card,.history-cards .game-card,.event-show-card.game-card.small,.revealed-opponent-hand .known-card,.opponent .pantry-row .known-card{
+  aspect-ratio:94/134!important;height:auto!important;
+}
+
+.history-cards .game-card{height:auto!important;}
+.event-show-card.game-card.small{height:auto!important;}
+.current-pile-column .game-card{height:auto!important;}
+.you .game-card{aspect-ratio:94/134!important;}
+
+/* Opponent hidden hand cards use the same card proportions. */
+
+.mini-card{margin-left:0!important;box-sizing:border-box!important;}
+
+/* inline JS applies overlap ONLY when natural width exceeds the tray */
+
+/* Pantries keep the same correct card ratio too. */
+
+.opponent .pantry-row{height:126px!important;min-height:126px!important;max-height:126px!important}
+
+
+/* Ensure revealed hands are never clipped by their own row. */
+.revealed-opponent-hand{height:104px!important;min-height:104px!important;max-height:104px!important;overflow:visible!important;align-items:flex-end!important}
+
+@media(max-width:1180px){
+  .center-zone{padding-right:18px!important;padding-top:78px!important}
+  .play-utility-rail{top:10px;right:12px;width:auto;left:12px;flex-direction:row;justify-content:flex-end}
+  .play-utility-rail .fast-bots,.play-utility-rail .turn-counter{width:auto!important;min-width:130px}
+}
+@media(max-width:760px){
+  .topbar{height:60px!important;min-height:60px!important}
+  
+  .topbar h1{font-size:.98rem!important;min-height:39px!important;padding:0 8px!important}
+  .intro-pests,.intro-pantry{font-size:clamp(4.3rem,18vw,7rem)!important}
+  .intro-home-actions{gap:9px}.intro-start,.intro-rules{min-width:120px!important;font-size:.95rem!important;padding:.72rem 1rem!important}
+  .play-utility-rail{flex-wrap:wrap!important}
+  .opponent{height:auto!important;min-height:325px!important;max-height:none!important}
+}
+
+
+/* ============================================================
+   v22.9 — CARD SHAPE + OPPONENT HAND FIX
+   ============================================================ */
+
+/* Header brand frames: same thin gold border as Return Home / Rules. */
+
+.topbar h1{
+  border-width:1px!important;
+  border-color:#c98b3d!important;
+}
+
+/* Keep the three main piles centered to the ENTIRE play area.
+   The utility rail floats over the far-right side and does not
+   participate in centering calculations. */
+.center-zone{
+  padding-right:24px!important;
+  padding-left:24px!important;
+}
+.pile-wrap{
+  width:100%!important;
+  margin:0 auto!important;
+  justify-content:center!important;
+  place-content:start center!important;
+}
+.play-utility-rail{
+  right:14px!important;
+}
+
+/* ------------------------------------------------------------
+   CORRECT CARD SYSTEM
+   No container-width units for border radius / typography.
+   Every card stays a normal rounded rectangle.
+   The contents scale from a 94x134 master card using --card-scale.
+   ------------------------------------------------------------ */
+.game-card{
+  --card-scale:1;
+  box-sizing:border-box!important;
+  aspect-ratio:94/134!important;
+  
+  border-style:solid!important;
+  border-width:calc(2px * var(--card-scale))!important;
+  border-radius:calc(11px * var(--card-scale))!important;
+  overflow:hidden!important;
+  container-type:normal!important;
+}
+.game-card .card-inner-rim{
+  inset:calc(4px * var(--card-scale))!important;
+  border-width:calc(2px * var(--card-scale))!important;
+  border-radius:calc(8px * var(--card-scale))!important;
+}
+.game-card .num{
+  top:calc(6px * var(--card-scale))!important;
+  font-size:calc(17px * var(--card-scale))!important;
+  line-height:1!important;
+  -webkit-text-stroke:calc(.9px * var(--card-scale)) rgba(39,22,13,.78)!important;
+  text-shadow:0 calc(1.5px * var(--card-scale)) calc(1px * var(--card-scale)) rgba(0,0,0,.35)!important;
+}
+.game-card .num-left{
+  left:calc(7px * var(--card-scale))!important;
+}
+.game-card .num-right{
+  right:calc(7px * var(--card-scale))!important;
+}
+.game-card .card-art-frame{
+  inset:
+    calc(22px * var(--card-scale))
+    calc(4px * var(--card-scale))
+    calc(29px * var(--card-scale))!important;
+}
+.game-card .pest{
+  bottom:calc(7px * var(--card-scale))!important;
+  left:calc(6px * var(--card-scale))!important;
+  right:calc(6px * var(--card-scale))!important;
+  height:calc(17px * var(--card-scale))!important;
+  font-size:calc(8.8px * var(--card-scale))!important;
+  line-height:1!important;
+}
+.game-card.pest-S .pest{
+  font-size:calc(6.3px * var(--card-scale))!important;
+}
+.game-card .card-art{
+  transform:scale(1.20)!important;
+}
+.game-card.pest-7 .card-art{transform:scale(1.14)!important}
+.game-card.pest-8 .card-art{transform:scale(1.12)!important}
+.game-card.pest-S .card-art{transform:scale(1.16)!important}
+.game-card.pest-10 .card-art{transform:scale(1.17)!important}
+
+/* Base full-size cards */
+.you .game-card,
+#yourPantry .game-card{
+  --card-scale:1!important;
+  width:94px!important;
+}
+
+/* Current play card: 122 / 94 = 1.2979 */
+.current-pile-column .game-card{
+  --card-scale:1.298!important;
+  width:122px!important;
+}
+
+/* Generic small / known cards: 52 / 94 = .553 */
+.known-card{
+  --card-scale:.553!important;
+  width:52px!important;
+}
+
+/* Opponent revealed hand cards: 56 / 94 = .596 */
+
+
+/* Opponent Pantry cards: 82 / 94 = .872 */
+.opponent .pantry-row .known-card{
+  --card-scale:.872!important;
+  width:82px!important;
+  flex:0 0 82px!important;
+}
+
+/* History / Trash modal cards: 62 / 94 = .660 */
+.history-cards .game-card{
+  --card-scale:.660!important;
+  width:62px!important;
+}
+
+/* Small event card: 58 / 94 = .617 */
+.event-show-card.game-card.small{
+  --card-scale:.617!important;
+  width:58px!important;
+}
+
+/* Any existing old context-specific font overrides must not distort
+   the proportional card system anymore. */
+.current-pile-column .game-card .pest,
+.you .game-card .pest,
+.history-cards .game-card .pest,
+.known-card .pest{
+  top:auto!important;
+}
+.current-pile-column .game-card .num,
+.you .game-card .num,
+.history-cards .game-card .num,
+.known-card .num{
+  transform:none!important;
+}
+
+/* Hidden opponent hand cards use the same 94:134 proportions. */
+.mini-card{
+  width:52px!important;
+  height:auto!important;
+  aspect-ratio:94/134!important;
+  flex:0 0 52px!important;
+  border-radius:6px!important;
+}
+
+/* CRITICAL opponent-hand behavior:
+   cards do NOT overlap at all unless JS determines they no longer fit.
+   --hand-shift remains 0 until actual overflow occurs. */
+.mini-hand{
+  --hand-shift:0px;
+  width:100%!important;
+  box-sizing:border-box!important;
+  gap:7px!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  overflow:visible!important;
+  justify-content:flex-start!important;
+}
+.mini-hand>*{
+  margin-left:0!important;
+}
+
+
+/* Preserve a little internal breathing room so "fit" is based on
+   the actual visible rectangle rather than spilling onto its border. */
+.opponent{
+  box-sizing:border-box!important;
+}
+.opponent .mini-hand{
+  width:calc(100% - 4px)!important;
+  
+  
+}
+
+/* Selected card stays selected while hovered. */
+.game-card.clickable.selected:hover{
+  transform:translateY(-13px) rotate(0deg) scale(1.035)!important;
+  box-shadow:0 0 0 3px #ffe17c,0 0 22px rgba(255,210,80,.55),0 13px 20px rgba(0,0,0,.38)!important;
+  z-index:24!important;
+}
+
+/* Narrow layouts: utility controls can move above, but pile centering
+   still ignores their existence. */
+@media(max-width:1180px){
+  .center-zone{
+    padding-right:18px!important;
+    padding-left:18px!important;
+    padding-top:78px!important;
+  }
+}
+
+
+/* ============================================================
+   v23.0 — REAL CARD BACK + FIXED OPPONENT TRAYS
+   ============================================================ */
+
+/* Use the supplied real card-back artwork everywhere a card is face-down. */
+.face-down,
+.mini-card{
+  background-image:url("assets/card-back.png")!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  background-size:cover!important;
+  background-color:#5a3218!important;
+}
+.face-down::before,
+.face-down::after{
+  display:none!important;
+}
+.face-down .card-inner-rim,
+.face-down .icon,
+.face-down .num,
+.face-down .pest,
+.face-down .card-art-frame{
+  display:none!important;
+}
+
+/* ------------------------------------------------------------
+   OPPONENT RECTANGLES ARE FIXED-WIDTH.
+   The hand adapts to the rectangle. The rectangle NEVER adapts
+   to the hand.
+   ------------------------------------------------------------ */
+.opponents{
+  display:grid!important;
+  
+  width:100%!important;
+}
+.opponent{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  box-sizing:border-box!important;
+  
+}
+.opponent .mini-hand{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  
+  align-items:flex-end!important;
+  gap:0!important;
+  padding:0 4px!important;
+  
+  
+}
+
+/* Opponent hidden cards use the SAME proportions as every other card. */
+.mini-hand .mini-card{
+  
+  height:auto!important;
+  aspect-ratio:94/134!important;
+  flex:0 0 56px!important;
+  margin-left:0!important;
+  border-radius:7px!important;
+  box-sizing:border-box!important;
+}
+
+/* Revealed cards use the same proportions too. */
+.revealed-opponent-hand .known-card{
+  --card-scale:.596!important;
+  width:56px!important;
+  flex:0 0 56px!important;
+  margin-left:0!important;
+}
+
+/* CRITICAL:
+   There is NO overlap by default. JS activates overlap ONLY
+   after the row physically exceeds the fixed opponent tray. */
+.mini-hand>*+*{
+  margin-left:calc(-1 * var(--hand-shift,0px))!important;
+}
+.mini-hand[data-overlap="none"]>*+*{
+  margin-left:7px!important;
+}
+.mini-hand[data-overlap="active"]>*+*{
+  margin-left:calc(-1 * var(--hand-shift,0px))!important;
+}
+
+/* Keep opponent content from widening the panel through flex sizing. */
+
+.opponent .pantry-row,
+.opponent .revealed-opponent-hand{
+  min-width:0!important;
+  max-width:100%!important;
+}
+
+/* Slightly larger opponent card backs with the new art, while preserving aspect ratio. */
+.mini-hand .mini-card{
+  width:60px!important;
+  flex-basis:60px!important;
+}
+
+/* On narrower screens, the tray still stays fixed to its grid cell. */
+@media(max-width:1180px){
+  .opponents{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  }
+  .mini-hand .mini-card{
+    width:54px!important;
+    flex-basis:54px!important;
+  }
+  .revealed-opponent-hand .known-card{
+    width:54px!important;
+    flex-basis:54px!important;
+  }
+}
+@media(max-width:900px){
+  .opponents{
+    grid-template-columns:1fr!important;
+  }
+  .opponent{
+    width:100%!important;
+  }
+}
+
+/* Preserve normal rounded rectangles everywhere. */
+.game-card,
+.mini-card,
+.known-card{
+  border-radius:10px!important;
+}
+
+
+/* ============================================================
+   v23.1 — OPPONENT HAND LAYOUT: EXPLICIT POSITIONING
+   ============================================================ */
+
+/* The opponent panel is fixed to its grid cell. Hand size cannot widen it. */
+.opponents{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+}
+.opponent{
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  
+  box-sizing:border-box!important;
+}
+
+/* Stop using flexbox/negative margins for opponent hands. */
+.opponent .mini-hand{
+  position:relative!important;
+  display:block!important;
+  width:calc(100% - 8px)!important;
+  min-width:0!important;
+  max-width:calc(100% - 8px)!important;
+  
+  
+  
+  margin:5px 4px 3px!important;
+  padding:0!important;
+  gap:0!important;
+  
+}
+
+/* Kill every older overlap rule. JS places each card at an exact x-coordinate. */
+.opponent .mini-hand>*,
+.opponent .mini-hand>*+*,
+.opponent .mini-hand[data-overlap="none"]>*+*,
+.opponent .mini-hand[data-overlap="active"]>*+*{
+  position:absolute!important;
+  margin:0!important;
+  flex:none!important;
+}
+
+/* Hidden and revealed cards keep the same normal bridge-card proportions. */
+.opponent .mini-hand .mini-card{
+  
+  height:auto!important;
+  
+  
+}
+.opponent .revealed-opponent-hand .known-card{
+  
+  
+  height:auto!important;
+  
+}
+
+/* Narrower screens can shrink the cards slightly, but the exact same
+   no-overlap-until-needed rule still applies. */
+@media(max-width:1180px){
+  .opponent .mini-hand .mini-card,
+  .opponent .revealed-opponent-hand .known-card{
+    width:54px!important;
+  }
+}
+@media(max-width:900px){
+  .opponents{grid-template-columns:1fr!important}
+}
+
+
+/* ============================================================
+   v23.2 — SMALLER, TIGHTER OPPONENT HANDS
+   ============================================================ */
+
+/* Smaller opponent-hand cards so more fit naturally before any overlap. */
+.opponent .mini-hand .mini-card{
+  width:48px!important;
+  flex-basis:48px!important;
+  aspect-ratio:94/134!important;
+  border-radius:6px!important;
+}
+
+/* Revealed opponent-hand cards match the same physical proportions. */
+.opponent .revealed-opponent-hand .known-card{
+  --card-scale:.511!important;
+  width:48px!important;
+  flex-basis:48px!important;
+  aspect-ratio:94/134!important;
+}
+
+/* Keep the hand row left-aligned and compact. */
+.opponent .mini-hand{
+  justify-content:flex-start!important;
+  margin-left:4px!important;
+  margin-right:4px!important;
+}
+
+/* Even with only a few cards, the maximum natural separation is just 5px.
+   They stay on the left side instead of spreading across the tray. */
+.opponent .mini-hand[data-overlap="none"]>*+*{
+  margin-left:0!important;
+}
+
+/* Slightly shorter hand band now that the cards are smaller. */
+.opponent .mini-hand{
+  height:92px!important;
+  min-height:92px!important;
+  max-height:92px!important;
+}
+.opponent .revealed-opponent-hand{
+  min-height:92px!important;
+  max-height:92px!important;
+}
+
+/* Narrower screens shrink a little more, but still use the same exact
+   no-overlap-until-needed logic from v23.1. */
+@media(max-width:1180px){
+  .opponent .mini-hand .mini-card,
+  .opponent .revealed-opponent-hand .known-card{
+    width:44px!important;
+    flex-basis:44px!important;
+  }
+  .opponent .revealed-opponent-hand .known-card{
+    --card-scale:.468!important;
+  }
+}
+n
+
+/* ============================================================
+   v23.4 — BRANDED CARD BACK + PANTRY / HOME POLISH
+   ============================================================ */
+
+/* Use the new branded Pests in the Pantry back everywhere face-down. */
+.face-down,
+.mini-card,
+.card-back{
+  background-image:url("assets/card-back.png")!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-color:#593416!important;
+}
+
+
+/* Cockroach name must fit in a full-size human hand card too. */
+.you .game-card.pest-10 .pest,
+#yourPantry .game-card.pest-10 .pest{
+  font-size:calc(6.6px * var(--card-scale))!important;
+  letter-spacing:-.04em!important;
+  white-space:nowrap!important;
+}
+
+/* Emoji bubbles may extend outside the opponent tray. The hand itself
+   stays clipped inside its own fixed-width mini-hand area. */
+
+.opponent .mini-hand{
+  overflow:hidden!important;
+}
+.opp-avatar-wrap,
+.bot-reaction-bubble{
+  overflow:visible!important;
+}
+.bot-reaction-bubble{
+  z-index:500!important;
+}
+
+/* Opponent Pantry is now a visually distinct four-slot tray. */
+.opponent-pantry-row{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  
+  width:100%!important;
+  
+  
+  
+  
+  margin-top:5px!important;
+  
+  border:2px solid rgba(230,178,89,.55)!important;
+  border-radius:12px!important;
+  background:
+    linear-gradient(180deg,rgba(81,48,25,.46),rgba(31,22,16,.52))!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,234,190,.08),
+    inset 0 8px 17px rgba(0,0,0,.20)!important;
+}
+.opponent-pantry-slot{
+  min-width:0!important;
+  width:100%!important;
+  
+  display:grid!important;
+  place-items:center!important;
+}
+.opponent-pantry-slot .known-card{
+  
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  margin:0!important;
+}
+.pantry-empty-slot{
+  
+  
+  
+  
+  
+  
+  
+  position:relative;
+}
+.pantry-empty-slot::after{
+  
+  position:absolute;
+  inset:8%;
+  border:1px solid rgba(240,218,176,.10);
+  border-radius:7px;
+}
+.opponent::after{
+  color:rgba(255,232,189,.72)!important;
+  font-size:.62rem!important;
+}
+
+/* Human Pantry gets a stronger tray treatment so it reads as a separate zone. */
+.you > .label:first-of-type{
+  
+  margin-top:7px!important;
+  padding:4px 10px!important;
+  
+  background:#5b351d!important;
+  border:1px solid #bb7a36!important;
+  border-bottom:0!important;
+  color:#ffe3aa!important;
+  letter-spacing:.08em!important;
+}
+#yourPantry{
+  
+  border:2px solid #a96b2d!important;
+  
+  background:linear-gradient(180deg,rgba(94,54,28,.42),rgba(33,23,17,.42))!important;
+  box-shadow:inset 0 10px 25px rgba(0,0,0,.18)!important;
+}
+
+/* No PLAY AREA watermark. */
+.center-zone::before{
+  content:none!important;
+  display:none!important;
+}
+
+/* Utility rail now contains only the two play-area toggles. */
+.play-utility-rail{
+  gap:7px!important;
+}
+
+/* Restore a reliable custom hover description above every face-up card.
+   Disable the older card pseudo-tooltip because card overflow may clip it. */
+.game-card[data-effect]::after{
+  display:none!important;
+}
+.card-hover-tip{
+  position:fixed;
+  z-index:4000;
+  width:max-content;
+  max-width:min(240px,calc(100vw - 16px));
+  padding:8px 11px;
+  border:1px solid #d99641;
+  border-radius:8px;
+  background:linear-gradient(#222832,#10151b);
+  box-shadow:0 5px 0 rgba(50,21,8,.62),0 10px 24px rgba(0,0,0,.42);
+  color:#fff0d2;
+  font:700 .72rem/1.25 Arial,sans-serif;
+  text-align:center;
+  pointer-events:none;
+  opacity:1;
+  transition:opacity .10s ease,transform .10s ease;
+}
+.card-hover-tip.hidden{
+  display:none!important;
+}
+
+/* Home logo: closer to the supplied stacked sign reference.
+   Cream hand-painted type, thick black backing, wooden IN THE plank. */
+
+.intro-logo{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  
+  filter:drop-shadow(0 13px 14px rgba(0,0,0,.45));
+}
+.intro-logo .intro-word{
+  font-family:"Cooper Black","Arial Black",Impact,sans-serif!important;
+  letter-spacing:.01em!important;
+  color:#f0dfb5!important;
+  -webkit-text-stroke:2px #24170d!important;
+  text-shadow:
+    0 3px 0 #6e5436,
+    0 6px 0 #17120d,
+    0 9px 13px rgba(0,0,0,.55)!important;
+}
+.intro-logo .intro-pests,
+.intro-logo .intro-pantry{
+  position:relative;
+  z-index:2;
+  
+  
+  
+  
+  
+  
+  
+  
+}
+
+.intro-logo .intro-pantry{
+  margin-top:-8px;
+  
+}
+
+
+
+
+/* The old entrance zoom is disabled completely. */
+.setup-screen.pantry-entering::before,
+.home-transitioning.pantry-entering::before{
+  animation:none!important;
+  transform:none!important;
+}
+
+/* Keep the turn counter visually part of the top bar. */
+.top-actions .turn-counter{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:34px;
+}
+.top-actions .turn-counter.hidden{
+  display:none!important;
+}
+
+/* Make the 4 Pantry cards truly fill the tray width on wide screens. */
+@media(min-width:1181px){
+  .opponent-pantry-row{
+    gap:8px!important;
+  }
+}
+
+/* On narrower layouts, preserve all four Pantry slots without overflow. */
+@media(max-width:1180px){
+  .opponent-pantry-row{
+    gap:5px!important;
+    padding:6px!important;
+  }
+  .opponent-pantry-slot .known-card{
+    --card-scale:.68!important;
+  }
+}
+
+
+/* ============================================================
+   v23.5 — PLAIN CARD BACK + HAND MOTION POLISH
+   ============================================================ */
+
+/* New plain wood card back everywhere a card is face-down. */
+.face-down,
+.mini-card,
+.card-back{
+  background-image:url("assets/card-back.png")!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-color:#583415!important;
+}
+.card-back::after{display:none!important}
+
+/* Tooltip is a page-level fixed overlay; it never inherits the human
+   card's hover movement. */
+.card-hover-tip{
+  transform:none!important;
+  will-change:auto!important;
+}
+
+/* Slightly larger opponent Pantry cards, packed closer together, but the
+   Pantry tray itself stays safely inside the opponent rectangle. */
+.opponent-pantry-row{
+  width:calc(100% - 10px)!important;
+  max-width:calc(100% - 10px)!important;
+  
+  
+  
+  
+  
+}
+.opponent-pantry-slot{
+  min-width:0!important;
+  max-width:100%!important;
+  
+}
+.opponent-pantry-slot .known-card{
+  
+  width:100%!important;
+  max-width:100%!important;
+  height:100%!important;
+  margin:0!important;
+}
+/* Pantry stays clipped/contained even though bot emoji bubbles may escape. */
+
+
+/* Personal Pantry becomes a large, centered four-card display. */
+.you > .label:first-of-type{
+  display:block!important;
+  width:max-content!important;
+  margin:10px auto 0!important;
+  text-align:center!important;
+  border-radius:8px 8px 0 0!important;
+}
+#yourPantry{
+  
+  
+  
+  
+  
+  
+  min-height:0!important;
+}
+#yourPantry .game-card{
+  --card-scale:1.38!important;
+  width:130px!important;
+  
+  flex:0 0 130px!important;
+}
+
+/* Center HAND while leaving the sort controls on the right. */
+.hand-heading-row{
+  position:relative!important;
+  justify-content:center!important;
+  min-height:42px!important;
+}
+.hand-heading-row > .label{
+  position:absolute!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  margin:0!important;
+  text-align:center!important;
+}
+.hand-heading-row .hand-sort{
+  margin-left:auto!important;
+}
+
+/* Current/discard pile keeps the same dark stacked-edge treatment as Draw,
+   instead of tan cardboard-looking layers. */
+.current-pile-column .pile{
+  box-shadow:
+    4px 5px 0 #17191d,
+    8px 9px 0 #0e1115,
+    12px 13px 0 rgba(4,6,8,.82),
+    0 18px 27px rgba(0,0,0,.36)!important;
+}
+.current-pile-column .pile::before,
+.current-pile-column .pile::after{
+  background:#101318!important;
+  border-color:#050608!important;
+}
+
+/* Newly drawn human card treatment. */
+#yourHand .game-card.newly-drawn{
+  position:relative!important;
+  z-index:35!important;
+  
+}
+
+#yourHand .game-card.newly-drawn::after{
+  content:"NEW"!important;
+  display:block!important;
+  position:absolute!important;
+  left:50%!important;
+  top:-30px!important;
+  bottom:auto!important;
+  width:max-content!important;
+  padding:4px 8px!important;
+  border-radius:7px!important;
+  border:2px solid #ffce4b!important;
+  background:#171b20!important;
+  color:#ffe88b!important;
+  font:900 .72rem/1 "Arial Black",Impact,sans-serif!important;
+  letter-spacing:.08em!important;
+  box-shadow:0 4px 0 rgba(63,29,7,.75),0 7px 13px rgba(0,0,0,.36)!important;
+  opacity:1!important;
+  transform:translateX(-50%)!important;
+  pointer-events:none!important;
+}
+@keyframes newCardGlow{
+  0%{filter:brightness(1);box-shadow:0 4px 0 rgba(45,27,17,.78),0 8px 14px rgba(0,0,0,.30)}
+  12%{filter:brightness(1.18);box-shadow:0 0 0 4px #ffd84e,0 0 28px rgba(255,210,62,.70),0 10px 18px rgba(0,0,0,.34)}
+  78%{filter:brightness(1.08);box-shadow:0 0 0 3px rgba(255,216,78,.60),0 0 20px rgba(255,210,62,.38),0 9px 16px rgba(0,0,0,.32)}
+  100%{filter:brightness(1);box-shadow:0 4px 0 rgba(45,27,17,.78),0 8px 14px rgba(0,0,0,.30)}
+}
+
+/* A much cleaner, bigger, more playful home logo. */
+.intro-logo{
+  gap:7px!important;
+  transform:rotate(-1deg);
+}
+.intro-logo .intro-pests,
+.intro-logo .intro-pantry{
+  min-width:0!important;
+  width:auto!important;
+  padding:.02em .18em .11em!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  font-family:"Cooper Black","Arial Black",Impact,sans-serif!important;
+  font-size:clamp(5.8rem,14vw,12rem)!important;
+  line-height:.76!important;
+  color:#ffd76e!important;
+  -webkit-text-stroke:clamp(2px,.28vw,5px) #241108!important;
+  text-shadow:
+    0 .045em 0 #e87821,
+    0 .09em 0 #8d3513,
+    0 .135em 0 #32140a,
+    .025em .16em .10em rgba(0,0,0,.58)!important;
+  letter-spacing:-.035em!important;
+}
+.intro-logo .intro-pests{transform:none}
+.intro-logo .intro-pantry{transform:none}
+
+
+/* Make sure the home logo and buttons remain comfortably visible. */
+.title-intro{
+  gap:28px!important;
+}
+.intro-home-actions{
+  margin-top:10px!important;
+}
+
+/* Responsive safety. */
+@media(max-width:1180px){
+  #yourPantry .game-card{
+    --card-scale:1.17!important;
+    width:110px!important;
+    flex-basis:110px!important;
+  }
+  .opponent-pantry-row{
+    gap:2px!important;
+    padding:4px!important;
+  }
+}
+@media(max-width:760px){
+  #yourPantry .game-card{
+    --card-scale:.96!important;
+    width:90px!important;
+    flex-basis:90px!important;
+  }
+  #yourPantry{
+    gap:6px!important;
+    padding:10px!important;
+  }
+}
+
+
+/* ============================================================
+   v23.6 — PANTRY SIZE + PILE DEPTH + CARD CONSISTENCY
+   ============================================================ */
+
+:root{
+  --physical-card-ratio:1050/1498;
+}
+
+/* ------------------------------------------------------------
+   HOME LOGO: big, fun, visible, with a proper explosion entrance.
+   IN THE is bright and deliberately high-contrast.
+   ------------------------------------------------------------ */
+.title-intro .intro-logo{
+  position:relative!important;
+  
+  
+  
+  
+  filter:drop-shadow(0 13px 16px rgba(0,0,0,.46))!important;
+}
+
+
+
+
+
+.title-intro .intro-pests,
+.title-intro .intro-pantry{
+  color:#ffd66a!important;
+  -webkit-text-stroke:clamp(2px,.28vw,5px) #1e0d06!important;
+  text-shadow:
+    0 .045em 0 #f27b23,
+    0 .09em 0 #933a16,
+    0 .14em 0 #32140a,
+    0 .18em .13em rgba(0,0,0,.60)!important;
+}
+
+
+
+/* ------------------------------------------------------------
+   OPPONENT HEADER STATUS: under Hand # · Pantry #, compact and small.
+   ------------------------------------------------------------ */
+
+.opponent-status-slot{
+  
+  
+  
+  
+  display:flex!important;
+  align-items:center!important;
+  
+  overflow:visible!important;
+}
+.opponent-status-slot:empty{
+  
+  
+  
+  margin:1px 2px 3px!important;
+}
+.opponent-status-slot .runner-upgrade-badge{
+  margin:0!important;
+  
+  
+  line-height:1!important;
+  border-width:1px!important;
+  white-space:nowrap!important;
+}
+.opponent-status-slot .rage-meter{
+  width:auto!important;
+  min-width:0!important;
+  
+  
+  margin:0!important;
+  
+  gap:4px!important;
+  border-width:1px!important;
+  border-radius:7px!important;
+  font-size:.48rem!important;
+}
+.opponent-status-slot .rage-label,
+.opponent-status-slot .rage-count{
+  font-size:.47rem!important;
+  line-height:1!important;
+}
+.opponent-status-slot .rage-segments{
+  gap:2px!important;
+}
+.opponent-status-slot .rage-segments i{
+  width:8px!important;
+  height:8px!important;
+  border-width:1px!important;
+}
+
+/* ------------------------------------------------------------
+   OPPONENT PANTRY: bigger cards and a taller tray. Nothing is clipped.
+   ------------------------------------------------------------ */
+.opponent-pantry-row{
+  width:calc(100% - 6px)!important;
+  max-width:calc(100% - 6px)!important;
+  
+  
+  
+  
+  
+  
+  
+  
+  align-items:start!important;
+}
+.opponent-pantry-slot{
+  width:100%!important;
+  
+  min-width:0!important;
+  
+  
+  display:flex!important;
+  
+  justify-content:center!important;
+  
+}
+.opponent-pantry-slot .game-card,
+.opponent-pantry-slot .known-card{
+  --card-scale:.91!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  margin:0!important;
+  flex:none!important;
+}
+.pantry-empty-slot{
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  align-self:flex-start!important;
+}
+
+/* ------------------------------------------------------------
+   HUMAN PANTRY: centered label and rounded tray on ALL FOUR corners.
+   ------------------------------------------------------------ */
+.your-pantry-label{
+  display:block!important;
+  width:100%!important;
+  margin:12px 0 7px!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  text-align:center!important;
+  color:#f5d99f!important;
+  font-family:"Arial Black",Impact,sans-serif!important;
+  font-size:.82rem!important;
+  letter-spacing:.14em!important;
+}
+#yourPantry{
+  border-radius:14px!important;
+  margin:0 auto 10px!important;
+}
+.your-hand-label{
+  text-align:center!important;
+  font-family:"Arial Black",Impact,sans-serif!important;
+  letter-spacing:.12em!important;
+}
+
+/* ------------------------------------------------------------
+   ALL CARD FRONTS/BACKS: identical physical aspect ratio.
+   Front cards can no longer appear noticeably skinnier.
+   ------------------------------------------------------------ */
+.game-card,
+.mini-card,
+.pile,
+.current-pile-column .pile{
+  box-sizing:border-box!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+}
+.game-card{
+  height:auto!important;
+}
+.face-down,
+.card-back,
+.mini-card{
+  aspect-ratio:var(--physical-card-ratio)!important;
+}
+
+/* Human hand/front card has the same physical outline as its back. */
+.you .game-card{
+  width:108px!important;
+  height:auto!important;
+}
+#yourPantry .game-card{
+  height:auto!important;
+}
+
+/* Cockroach text: readable in the human hand, but still fits. */
+.you .game-card.pest-10 .pest{
+  font-size:calc(7.7px * var(--card-scale))!important;
+  letter-spacing:-.055em!important;
+  left:calc(4px * var(--card-scale))!important;
+  right:calc(4px * var(--card-scale))!important;
+}
+
+/* ------------------------------------------------------------
+   Runner level-up showcase cards use normal cards and one consistent scale.
+   ------------------------------------------------------------ */
+.event-card-row{
+  display:flex!important;
+  justify-content:center!important;
+  align-items:flex-end!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+}
+.event-show-card{
+  --card-scale:.80!important;
+  width:75px!important;
+  height:auto!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  flex:0 0 75px!important;
+}
+.event-show-card .num{
+  top:calc(6px * var(--card-scale))!important;
+  font-size:calc(17px * var(--card-scale))!important;
+}
+.event-show-card .num-left{left:calc(7px * var(--card-scale))!important}
+.event-show-card .num-right{right:calc(7px * var(--card-scale))!important}
+.event-show-card .card-art-frame{
+  inset:
+    calc(22px * var(--card-scale))
+    calc(4px * var(--card-scale))
+    calc(29px * var(--card-scale))!important;
+}
+.event-show-card .pest{
+  top:auto!important;
+  bottom:calc(7px * var(--card-scale))!important;
+  left:calc(5px * var(--card-scale))!important;
+  right:calc(5px * var(--card-scale))!important;
+  height:calc(17px * var(--card-scale))!important;
+  font-size:calc(8.4px * var(--card-scale))!important;
+  line-height:1!important;
+}
+.event-show-card.pest-10 .pest{
+  font-size:calc(7.0px * var(--card-scale))!important;
+  letter-spacing:-.045em!important;
+}
+.event-show-card.pest-S .pest{
+  font-size:calc(6.0px * var(--card-scale))!important;
+}
+
+/* ------------------------------------------------------------
+   DRAW / CURRENT / TRASH DEPTH: quantity-aware, never excessively 3D.
+   ------------------------------------------------------------ */
+.pile,
+.current-pile-column .pile{
+  transition:box-shadow .18s ease,transform .18s ease!important;
+}
+
+
+
+
+/* Kill old fake-card/tan stack layers so the depth classes are authoritative. */
+.pile::before,
+.pile::after,
+.current-pile-column .pile::before,
+.current-pile-column .pile::after,
+.out-pile::before,
+.out-pile::after{
+  display:none!important;
+  content:none!important;
+}
+.out-pile{
+  background:linear-gradient(145deg,#282d34,#101318)!important;
+  
+}
+.current-pile-column .pile{
+  background:#101318!important;
+}
+
+/* Preserve the actual face card in Current above the black stack base. */
+.current-pile-column .pile > .game-card{
+  position:relative!important;
+  z-index:2!important;
+}
+
+/* Responsive safety. */
+@media(max-width:1180px){
+  .opponent{
+    height:390px!important;
+    min-height:390px!important;
+    max-height:390px!important;
+  }
+  .opponent-pantry-row{
+    height:133px!important;
+    min-height:133px!important;
+    max-height:133px!important;
+  }
+}
+@media(max-width:760px){
+  .opponent{
+    height:auto!important;
+    min-height:372px!important;
+    max-height:none!important;
+  }
+  .opponent-pantry-row{
+    height:126px!important;
+    min-height:126px!important;
+    max-height:126px!important;
+  }
+}
+
+
+/* ============================================================
+   v23.7 — PANTRY SLOT / SELECTION / HOME EFFECT FIXES
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   HOME TITLE SEQUENCE
+   PESTS pop -> IN pow left tilt -> THE pow right tilt -> PANTRY pop.
+   ------------------------------------------------------------ */
+.title-intro .intro-logo{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  gap:10px!important;
+}
+
+
+
+
+
+.title-intro .intro-mid-row{
+  
+  
+  
+  
+  min-height:auto!important;
+}
+.title-intro .intro-in,
+.title-intro .intro-the{
+  padding:.12em .35em .18em!important;
+  border:3px solid #281207!important;
+  border-radius:10px!important;
+  background:linear-gradient(#a96835,#72411f)!important;
+  color:#fff0bd!important;
+  -webkit-text-stroke:1px #2a1308!important;
+  text-shadow:0 2px 0 #6f391a,0 4px 7px rgba(0,0,0,.52)!important;
+  font-family:"Cooper Black","Arial Black",Impact,sans-serif!important;
+  
+  line-height:.9!important;
+}
+
+
+
+
+/* ------------------------------------------------------------
+   Opponent status: immediately beneath Hand # · Pantry #.
+   ------------------------------------------------------------ */
+.opponent-status-slot{
+  position:absolute!important;
+  top:57px!important;
+  right:14px!important;
+  width:auto!important;
+  height:21px!important;
+  min-height:21px!important;
+  max-height:21px!important;
+  margin:0!important;
+  z-index:20!important;
+  justify-content:flex-end!important;
+}
+.opponent-status-slot:empty{
+  height:0!important;
+  min-height:0!important;
+  max-height:0!important;
+}
+.opponent-status-slot .runner-upgrade-badge{
+  padding:2px 6px!important;
+  font-size:.48rem!important;
+}
+.opponent-status-slot .rage-meter{
+  height:18px!important;
+  padding:1px 5px!important;
+  max-width:180px!important;
+}
+
+/* ------------------------------------------------------------
+   Opponent Pantry tray: taller than its cards so bottoms never clip.
+   Cards are larger, and the tray itself remains fully inside panel.
+   ------------------------------------------------------------ */
+
+.opponent-pantry-row{
+  width:calc(100% - 8px)!important;
+  max-width:calc(100% - 8px)!important;
+  
+  
+  
+  
+  
+  
+  
+  
+}
+.opponent-pantry-slot{
+  width:100%!important;
+  
+  min-width:0!important;
+  
+  display:flex!important;
+  
+  justify-content:center!important;
+  
+}
+.opponent-pantry-slot .game-card,
+.opponent-pantry-slot .known-card,
+.opponent-pantry-slot .pantry-empty-slot{
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  flex:none!important;
+  margin:0!important;
+}
+.opponent-pantry-slot .known-card{
+  --card-scale:.95!important;
+}
+
+/* Exact, simple empty silhouette — same geometry as the real card. */
+.pantry-empty-slot{
+  box-sizing:border-box!important;
+  border:2px dashed rgba(244,226,188,.30)!important;
+  border-radius:10px!important;
+  background:rgba(255,244,215,.025)!important;
+  box-shadow:none!important;
+}
+.pantry-empty-slot::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* ------------------------------------------------------------
+   Human Pantry: same four-slot system, much larger, centered.
+   ------------------------------------------------------------ */
+#yourPantry{
+  display:grid!important;
+  grid-template-columns:repeat(4,132px)!important;
+  gap:10px!important;
+  width:max-content!important;
+  max-width:100%!important;
+  justify-content:center!important;
+  align-items:start!important;
+  padding:14px!important;
+}
+.human-pantry-slot{
+  width:132px!important;
+  
+  display:grid!important;
+  place-items:center!important;
+}
+.human-pantry-slot .game-card,
+.human-pantry-slot .pantry-empty-slot{
+  width:100%!important;
+  height:100%!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  margin:0!important;
+}
+.human-pantry-slot .game-card{
+  --card-scale:1.40!important;
+}
+.human-pantry-empty-slot{
+  border-width:2px!important;
+  border-radius:12px!important;
+}
+
+/* ------------------------------------------------------------
+   NEW CARD: steady highlight only. No flashing / pulsing animation.
+   ------------------------------------------------------------ */
+#yourHand .game-card.newly-drawn{
+  animation:none!important;
+  filter:brightness(1.08)!important;
+  box-shadow:
+    0 0 0 3px #ffd84e,
+    0 0 22px rgba(255,210,62,.48),
+    0 9px 16px rgba(0,0,0,.32)!important;
+}
+#yourHand .game-card.newly-drawn::before{
+  box-shadow:inset 0 0 0 3px rgba(255,224,104,.68)!important;
+}
+
+/* ------------------------------------------------------------
+   Trash uses the SAME card back as Draw.
+   ------------------------------------------------------------ */
+.out-pile{
+  background-image:url("assets/card-back.png")!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+  background-color:#583415!important;
+  border-color:#15100c!important;
+}
+
+/* ------------------------------------------------------------
+   All three pile depths use the SAME downward-right direction.
+   Current child card itself gets no independent fake-stack shadow.
+   ------------------------------------------------------------ */
+.pile,
+.current-pile-column .pile,
+.out-pile,
+.card-back{
+  transform:none!important;
+}
+.current-pile-column .pile > .game-card{
+  box-shadow:none!important;
+}
+.pile-depth-0{
+  box-shadow:0 4px 8px rgba(0,0,0,.22)!important;
+}
+.pile-depth-1{
+  box-shadow:
+    3px 3px 0 #111419,
+    0 7px 10px rgba(0,0,0,.27)!important;
+}
+.pile-depth-2{
+  box-shadow:
+    3px 3px 0 #161a20,
+    6px 6px 0 #0d1014,
+    0 11px 14px rgba(0,0,0,.30)!important;
+}
+.pile-depth-3{
+  box-shadow:
+    3px 3px 0 #1a1e24,
+    6px 6px 0 #111419,
+    9px 9px 0 #090b0e,
+    0 14px 17px rgba(0,0,0,.33)!important;
+}
+
+/* ------------------------------------------------------------
+   When it is not your turn, hand cards can never visually stay selected.
+   ------------------------------------------------------------ */
+#yourHand .game-card:not(.clickable){
+  cursor:default!important;
+}
+#yourHand .game-card:not(.clickable).selected{
+  transform:none!important;
+  box-shadow:0 4px 0 rgba(45,27,17,.78),0 8px 14px rgba(0,0,0,.30)!important;
+}
+
+/* Responsive Pantry slots. */
+@media(max-width:1180px){
+  .opponent{
+    height:408px!important;
+    min-height:408px!important;
+    max-height:408px!important;
+  }
+  .opponent-pantry-row{
+    height:154px!important;
+    min-height:154px!important;
+    max-height:154px!important;
+  }
+  #yourPantry{
+    grid-template-columns:repeat(4,112px)!important;
+  }
+  .human-pantry-slot{
+    width:112px!important;
+  }
+}
+@media(max-width:760px){
+  .opponent{
+    min-height:390px!important;
+    height:auto!important;
+    max-height:none!important;
+  }
+  .opponent-pantry-row{
+    height:142px!important;
+    min-height:142px!important;
+    max-height:142px!important;
+  }
+  #yourPantry{
+    grid-template-columns:repeat(4,88px)!important;
+    gap:6px!important;
+    padding:10px!important;
+  }
+  .human-pantry-slot{
+    width:88px!important;
+  }
+}
+
+
+/* ============================================================
+   v23.8 — CRITICAL PANTRY + DRAW DEPTH FIXES
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   HOME: PESTS / PANTRY start tiny, explode HUGE, shake while huge,
+   stay huge for roughly a second, then settle back to a large size.
+   ------------------------------------------------------------ */
+
+
+
+
+
+
+
+
+/* ------------------------------------------------------------
+   OPPONENT SECTION LABELS: explicit, centered, above each section.
+   ------------------------------------------------------------ */
+.opponent::after{
+  content:none!important;
+  display:none!important;
+}
+.opponent-section-label{
+  width:100%!important;
+  text-align:center!important;
+  color:#d8c09a!important;
+  font:900 .58rem/1 "Arial Black",Impact,sans-serif!important;
+  letter-spacing:.16em!important;
+  pointer-events:none!important;
+}
+
+
+
+/* ------------------------------------------------------------
+   CRITICAL OPPONENT PANTRY FIX:
+   The INNER Pantry rectangle is extended downward enough to contain
+   the full cards. No clipping at the bottom.
+   ------------------------------------------------------------ */
+
+.opponent-pantry-row{
+  width:calc(100% - 8px)!important;
+  max-width:calc(100% - 8px)!important;
+  
+  
+  
+  
+  
+  
+  
+  
+  align-items:start!important;
+}
+.opponent-pantry-slot{
+  width:100%!important;
+  
+  min-width:0!important;
+  
+  display:flex!important;
+  
+  justify-content:center!important;
+  
+}
+.opponent-pantry-slot > .game-card{
+  width:100%!important;
+  height:auto!important;
+  max-width:100%!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  flex:none!important;
+  margin:0!important;
+}
+.opponent-pantry-slot > .known-card{
+  --card-scale:.95!important;
+}
+
+/* ------------------------------------------------------------
+   EMPTY PANTRY SILHOUETTES: literally the same outer card box.
+   Same width, same aspect ratio, same radius, same border thickness.
+   ------------------------------------------------------------ */
+.pantry-empty-slot.game-card{
+  --card-scale:.95!important;
+  width:100%!important;
+  height:auto!important;
+  max-width:100%!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  box-sizing:border-box!important;
+  border:calc(2px * var(--card-scale)) dashed rgba(244,226,188,.34)!important;
+  border-radius:calc(11px * var(--card-scale))!important;
+  background:rgba(255,244,215,.025)!important;
+  box-shadow:none!important;
+  overflow:hidden!important;
+}
+.pantry-empty-slot.game-card::before,
+.pantry-empty-slot.game-card::after,
+.pantry-empty-slot.game-card .card-inner-rim{
+  display:none!important;
+  content:none!important;
+}
+
+/* Human empty Pantry slot is exactly the same geometry as a human Pantry card. */
+.human-pantry-slot > .pantry-empty-slot.game-card{
+  --card-scale:1.40!important;
+  width:100%!important;
+  height:100%!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  border-radius:calc(11px * var(--card-scale))!important;
+}
+
+/* ------------------------------------------------------------
+   DRAW/CURRENT/TRASH DEPTH:
+   Override ALL old static stack shadows at ID specificity.
+   This is intentionally last in the stylesheet and !important.
+   ------------------------------------------------------------ */
+#drawPile,
+#currentCard,
+#outPile{
+  filter:none!important;
+  transform:none!important;
+}
+#drawPile::before,#drawPile::after,
+#currentCard::before,#currentCard::after,
+#outPile::before,#outPile::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* 0-9 = truly flat. No fake stack at all. */
+#drawPile.pile-depth-0,
+#currentCard.pile-depth-0,
+#outPile.pile-depth-0{
+  box-shadow:0 4px 8px rgba(0,0,0,.20)!important;
+}
+
+/* 10-19 = one thin layer */
+#drawPile.pile-depth-1,
+#currentCard.pile-depth-1,
+#outPile.pile-depth-1{
+  box-shadow:
+    3px 3px 0 #111419,
+    0 7px 10px rgba(0,0,0,.25)!important;
+}
+
+/* 20-29 = two thin layers */
+#drawPile.pile-depth-2,
+#currentCard.pile-depth-2,
+#outPile.pile-depth-2{
+  box-shadow:
+    3px 3px 0 #15191e,
+    6px 6px 0 #0d1014,
+    0 10px 13px rgba(0,0,0,.28)!important;
+}
+
+/* 30+ = capped at three layers */
+#drawPile.pile-depth-3,
+#currentCard.pile-depth-3,
+#outPile.pile-depth-3{
+  box-shadow:
+    3px 3px 0 #181c21,
+    6px 6px 0 #111419,
+    9px 9px 0 #090b0e,
+    0 13px 16px rgba(0,0,0,.31)!important;
+}
+
+/* The face-up card in Current never contributes another stack shadow. */
+#currentCard > .game-card{
+  box-shadow:none!important;
+  filter:none!important;
+}
+
+/* Draw pile specifically: kill the old hard-coded card-back stack shadow
+   that made it look max-depth regardless of count. */
+#drawPile.card-back{
+  box-shadow:none!important;
+}
+#drawPile.card-back.pile-depth-0{
+  box-shadow:0 4px 8px rgba(0,0,0,.20)!important;
+}
+#drawPile.card-back.pile-depth-1{
+  box-shadow:3px 3px 0 #111419,0 7px 10px rgba(0,0,0,.25)!important;
+}
+#drawPile.card-back.pile-depth-2{
+  box-shadow:3px 3px 0 #15191e,6px 6px 0 #0d1014,0 10px 13px rgba(0,0,0,.28)!important;
+}
+#drawPile.card-back.pile-depth-3{
+  box-shadow:3px 3px 0 #181c21,6px 6px 0 #111419,9px 9px 0 #090b0e,0 13px 16px rgba(0,0,0,.31)!important;
+}
+
+/* Responsive safety for the larger INNER Pantry tray. */
+@media(max-width:1180px){
+  .opponent{
+    height:444px!important;
+    min-height:444px!important;
+    max-height:444px!important;
+  }
+  .opponent-pantry-row{
+    height:194px!important;
+    min-height:194px!important;
+    max-height:194px!important;
+  }
+}
+@media(max-width:760px){
+  .opponent{
+    height:auto!important;
+    min-height:420px!important;
+    max-height:none!important;
+  }
+  .opponent-pantry-row{
+    height:174px!important;
+    min-height:174px!important;
+    max-height:174px!important;
+  }
+}
+
+
+/* ============================================================
+   v23.9 — HOME POP + OPPONENT PANTRY SPACING / SILHOUETTE FIX
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   HOME INTRO:
+   PESTS and PANTRY explicitly start tiny, rocket to HUGE very fast,
+   shake while huge for about one second, then settle to a still-large size.
+   Use animation-name only here so old keyframes cannot override it.
+   ------------------------------------------------------------ */
+
+
+
+
+
+/* Keep IN / THE sequence visible and unaffected. */
+
+
+
+/* ------------------------------------------------------------
+   OPPONENT PANEL:
+   Remove giant dead area at bottom; pantry section spacing is deliberate.
+   ------------------------------------------------------------ */
+.opponent{
+  
+  
+  
+  display:block!important;
+  padding-bottom:10px!important;
+}
+
+/* HAND spacing stays as-is. PANTRY gets real breathing room before cards. */
+.opponent-pantry-label{
+  margin-top:14px!important;
+  margin-bottom:10px!important;
+}
+
+/* Inner Pantry box must extend BELOW the full cards. */
+.opponent-pantry-row{
+  height:186px!important;
+  min-height:186px!important;
+  max-height:186px!important;
+  padding:8px 6px 12px!important;
+  margin:0 4px!important;
+  gap:3px!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+
+/* Slot itself uses the exact card geometry and does not stretch vertically. */
+.opponent-pantry-slot{
+  height:auto!important;
+  min-height:0!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  overflow:visible!important;
+  align-items:start!important;
+}
+
+/* Real opponent Pantry card size. */
+.opponent-pantry-slot > .game-card,
+.opponent-pantry-slot > .known-card{
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  max-width:100%!important;
+  max-height:none!important;
+  margin:0!important;
+  flex:none!important;
+}
+
+/* Empty silhouette = EXACT SAME dimensions as the real card.
+   No 100% height stretching from previous rules. */
+.opponent-pantry-slot > .pantry-empty-slot.game-card{
+  width:100%!important;
+  height:auto!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  max-width:100%!important;
+  max-height:none!important;
+  min-height:0!important;
+  margin:0!important;
+  flex:none!important;
+  align-self:start!important;
+}
+
+/* Human silhouette should match the human Pantry card exactly too. */
+.human-pantry-slot{
+  aspect-ratio:var(--physical-card-ratio)!important;
+  height:auto!important;
+}
+.human-pantry-slot > .game-card,
+.human-pantry-slot > .pantry-empty-slot.game-card{
+  
+  
+  
+  max-width:100%!important;
+  
+  
+}
+
+/* Responsive: preserve layout instead of reintroducing the bottom gap. */
+@media(max-width:1180px){
+  .opponent{
+    height:394px!important;
+    min-height:394px!important;
+    max-height:394px!important;
+  }
+  .opponent-pantry-row{
+    height:171px!important;
+    min-height:171px!important;
+    max-height:171px!important;
+  }
+}
+@media(max-width:760px){
+  .opponent{
+    height:auto!important;
+    min-height:386px!important;
+    max-height:none!important;
+  }
+  .opponent-pantry-row{
+    height:158px!important;
+    min-height:158px!important;
+    max-height:158px!important;
+  }
+}
+
+
+/* ============================================================
+   v24.0 — VERIFIED HOME ANIMATION + PANTRY LAYOUT RESET
+   ============================================================ */
+
+/* HOME: opacity must NOT be !important or keyframes cannot animate it. */
+
+
+
+
+
+
+
+/* BOT PANEL: let content determine its height. This removes the dead lower half. */
+.opponent{
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  padding:11px 13px 12px!important;
+  overflow:visible!important;
+}
+
+/* HAND section keeps its existing comfortable spacing. */
+.opponent-hand-label{
+  margin:5px 0 4px!important;
+}
+
+/* Give PANTRY its own distinct vertical breathing room. */
+.opponent-pantry-label{
+  margin:18px 0 10px!important;
+}
+
+/* Pantry tray sizes itself FROM the real cards, not the other way around. */
+.opponent .opponent-pantry-row{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  align-items:start!important;
+  width:calc(100% - 8px)!important;
+  max-width:780px!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:0 auto!important;
+  padding:8px 7px 16px!important;
+  gap:5px!important;
+  box-sizing:border-box!important;
+  overflow:visible!important;
+}
+
+/* Each slot has no artificial height. */
+.opponent .opponent-pantry-row .opponent-pantry-slot{
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  display:flex!important;
+  justify-content:center!important;
+  align-items:flex-start!important;
+  overflow:visible!important;
+}
+
+/* REAL CARD and EMPTY SILHOUETTE use the IDENTICAL sizing rule. */
+.opponent .opponent-pantry-row .opponent-pantry-slot > .known-card,
+.opponent .opponent-pantry-row .opponent-pantry-slot > .pantry-empty-slot.game-card{
+  --card-scale:.88!important;
+  width:min(100%,160px)!important;
+  height:auto!important;
+  min-height:0!important;
+  max-width:160px!important;
+  max-height:none!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  margin:0!important;
+  flex:0 0 auto!important;
+  align-self:flex-start!important;
+  box-sizing:border-box!important;
+}
+
+/* Silhouette is intentionally simple but EXACTLY the card footprint. */
+.opponent .opponent-pantry-row .opponent-pantry-slot > .pantry-empty-slot.game-card{
+  border:2px dashed rgba(245,226,188,.34)!important;
+  border-radius:10px!important;
+  background:rgba(255,245,220,.025)!important;
+  box-shadow:none!important;
+  padding:0!important;
+}
+.opponent .opponent-pantry-row .opponent-pantry-slot > .pantry-empty-slot.game-card::before,
+.opponent .opponent-pantry-row .opponent-pantry-slot > .pantry-empty-slot.game-card::after{
+  display:none!important;
+  content:none!important;
+}
+
+/* Human silhouettes use the exact same slot dimensions as their live card. */
+.human-pantry-slot > .game-card,
+.human-pantry-slot > .pantry-empty-slot.game-card{
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:var(--physical-card-ratio)!important;
+  box-sizing:border-box!important;
+}
+
+/* No fixed-height media rule is allowed to shrink the Pantry tray again. */
+@media(max-width:1180px){
+  .opponent{height:auto!important;min-height:0!important;max-height:none!important}
+  .opponent .opponent-pantry-row{height:auto!important;min-height:0!important;max-height:none!important;max-width:720px!important}
+  .opponent .opponent-pantry-row .opponent-pantry-slot > .known-card,
+  .opponent .opponent-pantry-row .opponent-pantry-slot > .pantry-empty-slot.game-card{max-width:145px!important}
+}
+@media(max-width:760px){
+  .opponent{height:auto!important;min-height:0!important;max-height:none!important}
+  .opponent .opponent-pantry-row{height:auto!important;min-height:0!important;max-height:none!important;padding-bottom:13px!important}
+  .opponent .opponent-pantry-row .opponent-pantry-slot > .known-card,
+  .opponent .opponent-pantry-row .opponent-pantry-slot > .pantry-empty-slot.game-card{max-width:128px!important}
+}
+
+
+/* ============================================================
+   v24.1 — UNMISTAKABLE HOME TITLE BOOM
+   PESTS / PANTRY: tiny -> violent huge impact -> shake -> settle
+   ============================================================ */
+
+.title-intro .intro-pests,
+.title-intro .intro-pantry{
+  
+  visibility:visible !important;
+  transform-origin:50% 50% !important;
+  will-change:transform,filter !important;
+}
+
+
+
+
+
+
+
+/* expanding impact ring behind each word */
+.title-intro .intro-pests::after,
+.title-intro .intro-pantry::after{
+  content:"" !important;
+  position:absolute !important;
+  left:50% !important;
+  top:50% !important;
+  width:110% !important;
+  height:135% !important;
+  border:7px solid rgba(255,214,125,.95) !important;
+  border-radius:50% !important;
+  pointer-events:none !important;
+  
+  
+  
+}
+
+
+
+
+
+
+
+/* ============================================================
+   v24.2 — FRESH HOME INTRO
+   All previous home-title animation rules were removed above.
+   Exact sequence:
+   1.00s blank
+   PESTS: .50s tiny -> huge, .25s huge -> medium
+   +.50s IN pop
+   +.10s THE pop
+   +.50s PANTRY: same .75s motion as PESTS
+   ============================================================ */
+
+.title-intro .intro-logo .intro-word{
+  opacity:0;
+  visibility:visible;
+  filter:none;
+  will-change:transform,opacity;
+}
+.title-intro .intro-pests,
+.title-intro .intro-pantry{
+  transform-origin:center;
+}
+.title-intro .intro-pests{
+  animation:v242WordGrow .75s 1.00s linear forwards;
+}
+.title-intro .intro-in{
+  animation:v242SmallPopLeft .24s 2.25s cubic-bezier(.16,1.65,.27,1) forwards;
+}
+.title-intro .intro-the{
+  animation:v242SmallPopRight .24s 2.35s cubic-bezier(.16,1.65,.27,1) forwards;
+}
+.title-intro .intro-pantry{
+  animation:v242WordGrow .75s 2.85s linear forwards;
+}
+
+/* 2/3 of the timeline = .50s; last 1/3 = .25s */
+@keyframes v242WordGrow{
+  0%{
+    opacity:1;
+    transform:scale(.08);
+  }
+  66.666%{
+    opacity:1;
+    transform:scale(1.85);
+  }
+  100%{
+    opacity:1;
+    transform:scale(1);
+  }
+}
+@keyframes v242SmallPopLeft{
+  0%{opacity:0;transform:scale(.18) rotate(-7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(-7deg)}
+  100%{opacity:1;transform:scale(1) rotate(-7deg)}
+}
+@keyframes v242SmallPopRight{
+  0%{opacity:0;transform:scale(.18) rotate(7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(7deg)}
+  100%{opacity:1;transform:scale(1) rotate(7deg)}
+}
+
+/* Keep IN / THE decently small and visually separate. */
+.title-intro .intro-mid-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:clamp(18px,3vw,44px)!important;
+}
+.title-intro .intro-in,
+.title-intro .intro-the{
+  font-size:clamp(1.9rem,4.2vw,3.7rem)!important;
+}
+
+/* Buttons appear only after the full title sequence has completed. */
+.title-intro .intro-home-actions{
+  opacity:0;
+  transform:translateY(10px);
+  animation:v242ButtonsIn .45s 3.72s ease forwards;
+}
+@keyframes v242ButtonsIn{
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Fresh header graphic supplied by the user. */
+
+
+
+/* Turn text matches Return Home / Rules typography. */
+.top-actions .turn-counter{
+  font-family:inherit!important;
+  font-size:.79rem!important;
+  font-weight:400!important;
+  letter-spacing:normal!important;
+  text-transform:none!important;
+  line-height:1!important;
+  color:#f7ecd5!important;
+}
+
+/* Home has no top bar. */
+.home-mode .topbar{
+  display:none!important;
+}
+.home-mode main{
+  height:100vh!important;
+  min-height:100vh!important;
+}
+
+/* New supplied card back. */
+.face-down,
+.mini-card,
+.card-back,
+.out-pile{
+  background-image:url("assets/card-back.png")!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
+}
+
+
+/* Dark Pantry -> game-board transition */
+.setup-screen.game-transition-out{
+  animation:v242LeavePantry .62s ease forwards!important;
+}
+#gameScreen.game-transition-in{
+  animation:v242EnterGame .68s ease both!important;
+}
+@keyframes v242LeavePantry{
+  0%{opacity:1;filter:brightness(1)}
+  100%{opacity:0;filter:brightness(.35) blur(2px)}
+}
+@keyframes v242EnterGame{
+  0%{opacity:0;filter:brightness(.55) blur(2px)}
+  100%{opacity:1;filter:brightness(1) blur(0)}
+}
+
+
+/* ============================================================
+   v24.3 — HOME INTRO VISIBILITY FIX
+   Final override intentionally owns visibility/opacity/animation.
+   ============================================================ */
+
+
+#titleIntro .intro-logo{
+  display:flex!important;
+  visibility:visible!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+#titleIntro .intro-word{
+  display:block!important;
+  visibility:visible!important;
+  filter:none!important;
+}
+
+
+
+
+
+@keyframes v243PestsGrow{
+  0%{opacity:1;transform:scale(.08)}
+  66.666%{opacity:1;transform:scale(1.85)}
+  100%{opacity:1;transform:scale(1)}
+}
+@keyframes v243PantryGrow{
+  0%{opacity:1;transform:scale(.08)}
+  66.666%{opacity:1;transform:scale(1.85)}
+  100%{opacity:1;transform:scale(1)}
+}
+@keyframes v243InPop{
+  0%{opacity:0;transform:scale(.18) rotate(-7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(-7deg)}
+  100%{opacity:1;transform:scale(1) rotate(-7deg)}
+}
+@keyframes v243ThePop{
+  0%{opacity:0;transform:scale(.18) rotate(7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(7deg)}
+  100%{opacity:1;transform:scale(1) rotate(7deg)}
+}
+
+/* Gameplay header: text only, no sign image. */
+.brand-text-wrap{
+  display:flex!important;
+  align-items:center!important;
+  min-width:0!important;
+}
+.topbar-game-title{
+  margin:0!important;
+  padding:.30rem .75rem!important;
+  font-family:Impact,"Arial Black","Trebuchet MS",sans-serif!important;
+  font-size:clamp(1.05rem,1.8vw,1.55rem)!important;
+  font-weight:900!important;
+  
+  line-height:1!important;
+  color:#fff0cf!important;
+  text-transform:uppercase!important;
+  transform:rotate(-1deg)!important;
+  text-shadow:
+    2px 2px 0 #17110b,
+    -1px -1px 0 #17110b,
+    0 3px 4px rgba(0,0,0,.65)!important;
+  border:2px solid #9b692d!important;
+  border-radius:10px!important;
+  background:rgba(22,24,28,.88)!important;
+  box-shadow:inset 0 0 0 1px rgba(242,204,132,.18),0 2px 5px rgba(0,0,0,.35)!important;
+  white-space:nowrap!important;
+}
+.topbar-game-title span{
+  color:#e6a43d!important;
+  font-size:.72em!important;
+  
+  display:inline-block!important;
+  transform:translateY(-1px)!important;
+}
+
+
+/* ============================================================
+   v24.4 — ACTUAL HOME INTRO VISIBILITY FIX
+   Root cause: opacity:0!important was overriding the animations.
+   No !important opacity is used on animated words anymore.
+   ============================================================ */
+
+
+
+/* Exact existing sequence, now actually allowed to animate opacity. */
+
+
+
+
+
+@keyframes v244PestsGrow{
+  0%{opacity:1;transform:scale(.08)}
+  66.666%{opacity:1;transform:scale(1.85)}
+  100%{opacity:1;transform:scale(1)}
+}
+@keyframes v244PantryGrow{
+  0%{opacity:1;transform:scale(.08)}
+  66.666%{opacity:1;transform:scale(1.85)}
+  100%{opacity:1;transform:scale(1)}
+}
+@keyframes v244InPop{
+  0%{opacity:0;transform:scale(.18) rotate(-7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(-7deg)}
+  100%{opacity:1;transform:scale(1) rotate(-7deg)}
+}
+@keyframes v244ThePop{
+  0%{opacity:0;transform:scale(.18) rotate(7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(7deg)}
+  100%{opacity:1;transform:scale(1) rotate(7deg)}
+}
+
+/* Spread the gameplay title out more across the top bar. */
+.topbar-game-title{
+  letter-spacing:.095em!important;
+  
+  padding-left:1rem!important;
+  padding-right:1rem!important;
+}
+.topbar-game-title span{
+  
+  
+  letter-spacing:.07em!important;
+}
+
+
+/* ============================================================
+   v24.6 — STABLE HOME INTRO
+   Built from v24.4's working home/button flow.
+   No JS animation system. No ring/oval pseudo effects.
+   ============================================================ */
+
+/* Kill every decorative pseudo-effect on the four title words. */
+#titleIntro .intro-pests::before,
+#titleIntro .intro-pests::after,
+#titleIntro .intro-in::before,
+#titleIntro .intro-in::after,
+#titleIntro .intro-the::before,
+#titleIntro .intro-the::after,
+#titleIntro .intro-pantry::before,
+#titleIntro .intro-pantry::after{
+  
+  
+  animation:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  background:none!important;
+}
+
+/* Reset all title pieces first. */
+#titleIntro .intro-pests,
+#titleIntro .intro-in,
+#titleIntro .intro-the,
+#titleIntro .intro-pantry,
+#titleIntro .intro-home-actions{
+  animation:none!important;
+  transition:none!important;
+  visibility:visible!important;
+  filter:none!important;
+}
+
+/* Initial state. */
+
+
+/* EXACT sequence:
+   1.00s blank
+   PESTS: .50s tiny->huge, .25s huge->mid
+   +.50s IN pop
+   +.10s THE pop
+   +.50s PANTRY same as PESTS
+*/
+
+
+
+
+
+@keyframes v246GrowWord{
+  0%{
+    opacity:1;
+    transform:scale(.08);
+  }
+  66.666%{
+    opacity:1;
+    transform:scale(1.85);
+  }
+  100%{
+    opacity:1;
+    transform:scale(1);
+  }
+}
+@keyframes v246PopLeft{
+  0%{opacity:0;transform:scale(.18) rotate(-7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(-7deg)}
+  100%{opacity:1;transform:scale(1) rotate(-7deg)}
+}
+@keyframes v246PopRight{
+  0%{opacity:0;transform:scale(.18) rotate(7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(7deg)}
+  100%{opacity:1;transform:scale(1) rotate(7deg)}
+}
+
+/* Buttons always appear after the title sequence. */
+#titleIntro .intro-home-actions{
+  opacity:0;
+  transform:translateY(10px);
+  
+}
+@keyframes v246ButtonsIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Make sure the title container itself cannot accidentally hide them. */
+#titleIntro{
+  display:flex!important;
+  visibility:visible!important;
+}
+#titleIntro.hidden{
+  display:none!important;
+}
+
+/* Gameplay top bar: PESTS, small stacked IN/THE, PANTRY. */
+.topbar-game-title{
+  
+  
+  
+  
+  margin:0!important;
+  padding:.30rem .85rem!important;
+  letter-spacing:.085em!important;
+  
+}
+.topbar-game-title .topbar-main-word{
+  display:inline-block!important;
+  color:#fff0cf!important;
+  font-size:1em!important;
+  line-height:1!important;
+}
+.topbar-game-title .topbar-in-the{
+  display:inline-flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  
+  
+  color:#e6a43d!important;
+  font-size:.52em!important;
+  line-height:.78!important;
+  letter-spacing:.04em!important;
+  transform:none!important;
+}
+.topbar-game-title .topbar-in-the > span{
+  display:block!important;
+  color:inherit!important;
+  font-size:1em!important;
+  line-height:inherit!important;
+  
+  transform:none!important;
+}
+
+
+/* ============================================================
+   v24.7 — SIMPLE UNIFIED POP + FADE FLOW
+   ============================================================ */
+
+/* Remove old decorative title pseudo effects. */
+#titleIntro .intro-pests::before,
+#titleIntro .intro-pests::after,
+#titleIntro .intro-in::before,
+#titleIntro .intro-in::after,
+#titleIntro .intro-the::before,
+#titleIntro .intro-the::after,
+#titleIntro .intro-pantry::before,
+#titleIntro .intro-pantry::after{
+  content:none!important;
+  display:none!important;
+}
+
+/* All four words now use the SAME simple pop effect. */
+#titleIntro .intro-pests,
+#titleIntro .intro-in,
+#titleIntro .intro-the,
+#titleIntro .intro-pantry{
+  
+  
+  animation:none!important;
+  
+}
+
+
+
+
+
+@keyframes v247SamePop{
+  0%{opacity:0;transform:scale(.18)}
+  62%{opacity:1;transform:scale(1.22)}
+  100%{opacity:1;transform:scale(1)}
+}
+@keyframes v247SamePopLeft{
+  0%{opacity:0;transform:scale(.18) rotate(-7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(-7deg)}
+  100%{opacity:1;transform:scale(1) rotate(-7deg)}
+}
+@keyframes v247SamePopRight{
+  0%{opacity:0;transform:scale(.18) rotate(7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(7deg)}
+  100%{opacity:1;transform:scale(1) rotate(7deg)}
+}
+
+/* Buttons appear after the four words. */
+#titleIntro .intro-home-actions{
+  opacity:0;
+  transform:translateY(8px);
+  
+}
+@keyframes v247ButtonsIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Explicit fade flow restored:
+   title/buttons fade OUT -> bot selection fades IN -> bot selection fades OUT. */
+.home-fade-out{
+  animation:v247FadeOut .44s ease forwards!important;
+  pointer-events:none!important;
+}
+.home-fade-in{
+  animation:v247FadeIn .44s ease forwards!important;
+}
+.setup-panel.home-fade-in{
+  display:block!important;
+}
+@keyframes v247FadeOut{
+  from{opacity:1;transform:scale(1);filter:blur(0)}
+  to{opacity:0;transform:scale(.98);filter:blur(2px)}
+}
+@keyframes v247FadeIn{
+  from{opacity:0;transform:scale(.98);filter:blur(2px)}
+  to{opacity:1;transform:scale(1);filter:blur(0)}
+}
+
+
+/* ============================================================
+   v24.8 — ROOT FIX: ALL WORDS USE THE SAME POP
+   Old PESTS/PANTRY !important transforms were removed above.
+   ============================================================ */
+
+#titleIntro .intro-pests,
+#titleIntro .intro-in,
+#titleIntro .intro-the,
+#titleIntro .intro-pantry{
+  opacity:0;
+  visibility:visible!important;
+  transform-origin:center center!important;
+}
+
+/* PESTS and PANTRY now use the exact same scale-pop behavior as IN/THE. */
+
+
+
+
+
+@keyframes v248ExactPop{
+  0%{opacity:0;transform:scale(.18)}
+  62%{opacity:1;transform:scale(1.22)}
+  100%{opacity:1;transform:scale(1)}
+}
+@keyframes v248ExactPopLeft{
+  0%{opacity:0;transform:scale(.18) rotate(-7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(-7deg)}
+  100%{opacity:1;transform:scale(1) rotate(-7deg)}
+}
+@keyframes v248ExactPopRight{
+  0%{opacity:0;transform:scale(.18) rotate(7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(7deg)}
+  100%{opacity:1;transform:scale(1) rotate(7deg)}
+}
+
+
+/* ============================================================
+   v24.9 — TIGHT TOP-BAR TITLE
+   Keep PESTS / stacked IN THE / PANTRY visually touching with
+   no intentional horizontal spacing between the three groups.
+   ============================================================ */
+.topbar .brand,
+header .brand{
+  gap:0!important;
+  column-gap:0!important;
+}
+
+.topbar .brand > *,
+header .brand > *{
+  margin-left:0!important;
+  margin-right:0!important;
+}
+
+/* If the title uses the PITP-specific title container/classes. */
+
+
+
+
+
+/* ============================================================
+   v26.0 — authoritative current intro / end-game presentation
+   ============================================================ */
+.topbar-game-title{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:0!important;
+  column-gap:0!important;
+  row-gap:0!important;
+  word-spacing:0!important;
+}
+.topbar-game-title > .topbar-main-word,
+.topbar-game-title > .topbar-in-the{
+  margin:0!important;
+  padding-left:0!important;
+  padding-right:0!important;
+}
+.topbar-game-title > .topbar-in-the{flex:0 0 auto!important}
+
+#titleIntro .intro-pests{
+  position:relative!important;
+  top:-30px!important;
+  animation:v26SidePop .34s 1s cubic-bezier(.16,1.45,.27,1) forwards!important;
+}
+#titleIntro .intro-in{
+  position:relative!important;
+  top:-18px!important;
+  animation:v26SmallLeft .30s 1.48s cubic-bezier(.16,1.65,.27,1) forwards!important;
+}
+#titleIntro .intro-the{
+  position:relative!important;
+  top:-18px!important;
+  animation:v26SmallRight .30s 1.58s cubic-bezier(.16,1.65,.27,1) forwards!important;
+}
+#titleIntro .intro-pantry{
+  animation:v26SidePop .34s 2.06s cubic-bezier(.16,1.45,.27,1) forwards!important;
+}
+#titleIntro .intro-home-actions{
+  animation:v26Buttons .40s 2.58s ease forwards!important;
+}
+@keyframes v26SidePop{
+  0%{opacity:0;transform:translateX(-10px) scale(.78)}
+  58%{opacity:1;transform:translateX(18px) scale(1.13)}
+  78%{opacity:1;transform:translateX(-4px) scale(.98)}
+  100%{opacity:1;transform:translateX(0) scale(1)}
+}
+@keyframes v26SmallLeft{
+  0%{opacity:0;transform:scale(.18) rotate(-7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(-7deg)}
+  100%{opacity:1;transform:scale(1) rotate(-7deg)}
+}
+@keyframes v26SmallRight{
+  0%{opacity:0;transform:scale(.18) rotate(7deg)}
+  62%{opacity:1;transform:scale(1.22) rotate(7deg)}
+  100%{opacity:1;transform:scale(1) rotate(7deg)}
+}
+@keyframes v26Buttons{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Pest Control choice treatment. The class is applied and removed by game.js. */
+.spider-choice-modal{
+  border:3px solid #b97a2f!important;
+  box-shadow:0 18px 55px #0009,inset 0 0 0 2px #ffd98c22!important;
+  background:radial-gradient(circle at 50% 0,#b97a2f33,transparent 46%),#171a20!important;
+  overflow:hidden!important;
+  padding-left:clamp(118px,16vw,205px)!important;
+  padding-right:clamp(118px,16vw,205px)!important;
+}
+.spider-choice-modal:before,
+.spider-choice-modal:after{
+  content:"";
+  position:absolute;
+  top:50%;
+  width:clamp(100px,15vw,185px);
+  height:clamp(132px,22vw,245px);
+  background-repeat:no-repeat;
+  background-size:contain;
+  background-position:center;
+  pointer-events:none;
+  filter:drop-shadow(0 10px 8px #0008);
+  z-index:2;
+}
+.spider-choice-modal:before{
+  left:10px;
+  transform:translate(0,-50%);
+  background-image:url("assets/spider-choice-left.png");
+}
+.spider-choice-modal:after{
+  right:10px;
+  transform:translate(0,-50%);
+  background-image:url("assets/spider-choice-right.png");
+}
+
+.bot-win-summary{text-align:center;padding:.3rem 0 .7rem}
+.bot-win-summary img{width:108px;height:108px;object-fit:cover;border-radius:50%;border:4px solid #d99b3d;box-shadow:0 7px 0 #704014,0 12px 24px #0008}
+.bot-win-summary .cup{font-size:3.6rem;line-height:.8;margin-top:-28px;filter:drop-shadow(0 4px 2px #0008);transform:rotate(-8deg)}
+.bot-win-summary .txt{font-size:1.5rem;font-weight:900;color:#ffe5a5;margin-top:.55rem}
+
+#victoryCelebration{position:fixed;inset:0;z-index:999999;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .22s}
+#victoryCelebration.show{opacity:1}
+#victoryCelebration .shade{position:absolute;inset:0;background:radial-gradient(circle at center,#ffb32e22,#0008)}
+#victoryCelebration .victory-title{position:absolute;z-index:5;left:50%;top:4.5%;transform:translateX(-50%);color:#fff0bd;font-family:Impact,"Arial Black",sans-serif;font-size:clamp(3rem,7vw,6.5rem);letter-spacing:.05em;text-shadow:0 5px 0 #7c3d0b,0 9px 20px #000b;white-space:nowrap;animation:v26Title .7s cubic-bezier(.15,1.7,.25,1) both}
+@keyframes v26Title{0%{transform:translateX(-50%) scale(.15) rotate(-7deg)}68%{transform:translateX(-50%) scale(1.18) rotate(2deg)}100%{transform:translateX(-50%) scale(1)}}
+#victoryCelebration .victory-trophy-wrap{position:absolute;z-index:4;left:50%;top:14.5%;width:min(34vw,385px);max-height:72vh;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:14px}
+#victoryCelebration .trophy{position:relative;width:100%;max-height:64vh;object-fit:contain;transform:translateY(110vh) scale(.65);filter:drop-shadow(0 15px 22px #000a);animation:v26Trophy .95s .15s cubic-bezier(.14,1.12,.24,1) forwards}
+@keyframes v26Trophy{70%{transform:translateY(-4%) scale(1.06)}100%{transform:translateY(0) scale(1)}}
+#victoryCelebration .victory-home-button{pointer-events:auto;opacity:0;visibility:hidden;transform:translateY(10px) scale(.94);transition:opacity .3s,transform .3s,visibility .3s;background:linear-gradient(#f7d98c,#d99b3d);border:3px solid #6d3b13;border-radius:12px;box-shadow:0 5px 0 #4f2a0d,0 9px 18px #0008;color:#2b180b;font:900 1.15rem/1.1 inherit;padding:10px 34px;cursor:pointer}
+#victoryCelebration.show-home .victory-home-button{opacity:1;visibility:visible;transform:translateY(0) scale(1)}
+#victoryCelebration .victory-home-button:hover{filter:brightness(1.08);transform:translateY(-1px) scale(1.02)}
+.victory-pest{position:absolute;z-index:2;top:-14vh;width:var(--pest-size);height:var(--pest-size);object-fit:contain;animation:v26Fall var(--fall) linear var(--delay) infinite;filter:drop-shadow(0 3px 3px #0008)}
+@keyframes v26Fall{to{transform:translate3d(var(--drift),122vh,0) rotate(var(--spin))}}
+.victory-firework{position:absolute;z-index:3;width:6px;height:6px;border-radius:50%}
+.victory-firework i{position:absolute;left:0;top:0;width:5px;height:17px;border-radius:50%;background:currentColor;transform-origin:50% 76px;opacity:0;animation:v26Spark 1.3s var(--d) ease-out infinite}
+@keyframes v26Spark{0%{opacity:0;transform:rotate(var(--r)) translateY(0) scale(.3)}12%{opacity:1}72%{opacity:.9;transform:rotate(var(--r)) translateY(-76px) scale(1)}100%{opacity:0;transform:rotate(var(--r)) translateY(-108px) scale(.15)}}
+.victory-ring-firework{position:absolute;z-index:3;width:5px;height:5px}
+.victory-ring-firework i{position:absolute;left:0;top:0;width:9px;height:9px;border:2px solid currentColor;border-radius:50%;background:transparent;opacity:0;transform-origin:50% 58px;animation:v262Ring 1.45s var(--d) ease-out infinite}
+@keyframes v262Ring{0%{opacity:0;transform:rotate(var(--r)) translateY(0) scale(.2)}15%{opacity:1}72%{opacity:.95;transform:rotate(var(--r)) translateY(-58px) scale(1.05)}100%{opacity:0;transform:rotate(var(--r)) translateY(-82px) scale(.25)}}
+@media(max-width:700px){#victoryCelebration .victory-trophy-wrap{top:16%;width:min(62vw,340px)}#victoryCelebration .victory-title{top:5%;font-size:clamp(2.7rem,13vw,5rem)}.victory-pest{width:calc(var(--pest-size) * .8);height:calc(var(--pest-size) * .8)}}
+
+
+/* ============================================================
+   v26.1 — testing controls, rules clarity, modal polish
+   ============================================================ */
+.utility-test-button{
+  width:100%!important;box-sizing:border-box!important;text-align:center!important;
+  background:linear-gradient(#292f38,#11161d)!important;border:2px solid #c98b3d!important;border-radius:10px!important;
+  box-shadow:0 4px 0 rgba(51,22,9,.65)!important;padding:8px 9px!important;font-size:.76rem!important;color:#f4ead8!important;
+}
+.utility-test-button:hover{filter:brightness(1.12)}
+
+/* Move the little speech-tail square a hair farther under the emoji circle. */
+.bot-reaction-bubble:after{bottom:-7px!important;}
+
+/* During Fly's dramatic reveal, hide the previous instructions and Pantry choices. */
+.pantry-choice-modal.fly-revealing>h2,
+.pantry-choice-modal.fly-revealing>.meta,
+.pantry-choice-modal.fly-revealing>.pantry-choice-grid{display:none!important;}
+.pantry-choice-modal.fly-revealing .pantry-reveal-preview{margin-top:0!important;}
+
+.color-hierarchy{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:.55rem 0 .35rem;}
+.hierarchy-color{padding:.38rem .7rem;border:2px solid #241a14;border-radius:9px;font-weight:900;color:#17120f;box-shadow:0 3px 0 #0004;}
+.green-chip{background:#8eaa78}.red-chip{background:#bf6b5e}.blue-chip{background:#7897ad}.gold-chip{background:#d4ac4d}
+.color-hierarchy b{color:#f0d6a0;font-size:1.2rem;}
+
+@media(max-width:900px){
+  .spider-choice-modal{padding-left:98px!important;padding-right:98px!important;}
+  .spider-choice-modal:before,.spider-choice-modal:after{width:88px;height:122px;}
+  .spider-choice-modal:before{left:4px;transform:translate(0,-50%);}
+  .spider-choice-modal:after{right:4px;transform:translate(0,-50%);}
+}
+
+/* v26.2 — victory celebration polish */
+
+
+/* ============================================================
+   v26.5 — locked end-game state + framed human victory
+   ============================================================ */
+html.game-ended-lock,body.game-ended-lock{overflow:hidden!important;overscroll-behavior:none!important;}
+body.game-ended-lock #gameScreen{pointer-events:none!important;user-select:none!important;}
+body.game-ended-lock #gameScreen *{pointer-events:none!important;}
+
+/* Human victory owns the viewport: it blocks clicks/hover behind it and blurs the table. */
+#victoryCelebration{pointer-events:auto!important;}
+#victoryCelebration .shade{background:rgba(16,10,7,.56)!important;backdrop-filter:blur(6px)!important;-webkit-backdrop-filter:blur(6px)!important;}
+#victoryCelebration .victory-panel{
+  position:absolute;z-index:4;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:min(430px,84vw);min-height:min(690px,88vh);box-sizing:border-box;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:28px 24px 24px;border:3px solid #7a4a22;border-radius:22px;
+  background:linear-gradient(180deg,rgba(61,42,29,.95),rgba(29,20,15,.96));
+  box-shadow:0 18px 60px #000b,inset 0 0 0 2px rgba(244,210,145,.14);
+}
+#victoryCelebration .victory-title{
+  position:relative!important;left:auto!important;top:auto!important;transform:none!important;z-index:5;
+  margin:0 0 8px;text-align:center;white-space:nowrap;
+  font-size:clamp(3rem,7vw,5.8rem)!important;
+  animation:v263Title .7s cubic-bezier(.15,1.7,.25,1) both!important;
+}
+@keyframes v263Title{0%{transform:scale(.15) rotate(-7deg)}68%{transform:scale(1.12) rotate(2deg)}100%{transform:scale(1)}}
+#victoryCelebration .victory-trophy-wrap{
+  position:relative!important;left:auto!important;top:auto!important;transform:none!important;z-index:4;
+  width:min(82%,345px)!important;max-height:none!important;flex:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;
+}
+#victoryCelebration .trophy{width:100%!important;max-height:54vh!important;}
+#victoryCelebration .victory-home-button{margin-top:auto;flex:0 0 auto;}
+
+/* The normal game-over modal already blocks clicks; strengthen the same blur and prevent page scrolling. */
+body.game-ended-lock .modal:not(.hidden){backdrop-filter:blur(6px)!important;-webkit-backdrop-filter:blur(6px)!important;}
+
+@media(max-width:700px){
+  #victoryCelebration .victory-panel{width:min(390px,88vw);min-height:min(620px,86vh);padding:22px 18px 20px;}
+  #victoryCelebration .victory-title{font-size:clamp(2.7rem,13vw,4.7rem)!important;}
+  #victoryCelebration .victory-trophy-wrap{width:min(84%,315px)!important;}
+  #victoryCelebration .trophy{max-height:50vh!important;}
+}
+
+
+/* ============================================================
+   v26.6 — public utility controls
+   ============================================================ */
+.public-cheat-control{display:none!important;}
+.utility-option-row{display:flex;align-items:center;gap:6px;width:100%;}
+.utility-option-row>.fast-bots{flex:1;min-width:0;margin:0!important;}
+.utility-info-button{
+  flex:0 0 24px;width:24px;height:24px;padding:0!important;border-radius:50%!important;
+  display:grid;place-items:center;font:900 14px/1 Georgia,serif!important;
+  color:#f4ead8!important;background:#20262e!important;border:1px solid #c98b3d!important;
+  box-shadow:0 2px 0 #4d2b12!important;cursor:pointer;
+}
+.utility-info-button:hover{filter:brightness(1.18);transform:translateY(-1px);}
+.utility-info-copy{max-width:470px;line-height:1.5;margin:.25rem 0 .8rem;}
+
+/* v26.6 — slightly wider utility toggles and centered info copy */
+.play-utility-rail{width:245px!important;}
+.utility-info-copy{max-width:470px!important;margin:.25rem auto .8rem!important;text-align:center!important;}
+@media(max-width:900px){
+  .play-utility-rail{width:auto!important;}
+  .utility-option-row>.fast-bots{min-width:205px!important;}
+}

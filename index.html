@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pests in the Pantry</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="assets/cockroach-logo.png" type="image/png" />
+</head>
+<body class="home-mode">
+  <div id="app">
+    <header class="topbar">
+      <div class="brand brand-text-wrap">
+        <h1 class="topbar-game-title" aria-label="Pests in the Pantry">
+          <span class="topbar-main-word">PESTS</span>
+          <span class="topbar-in-the"><span>IN</span><span>THE</span></span>
+          <span class="topbar-main-word">PANTRY</span>
+        </h1>
+      </div>
+      <div class="top-actions">
+        <div id="turnCounter" class="turn-counter hidden">Turn 1</div>
+        <button id="homeBtn" class="ghost hidden">Return Home</button>
+        <button id="rulesBtn" class="ghost">Rules</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="setupScreen" class="setup-screen">
+        <div id="titleIntro" class="title-intro">
+          <div class="intro-logo" aria-label="Pests in the Pantry">
+            <div class="intro-word intro-pests">PESTS</div>
+            <div class="intro-mid-row">
+              <div class="intro-word intro-in">IN</div>
+              <div class="intro-word intro-the">THE</div>
+            </div>
+            <div class="intro-word intro-pantry">PANTRY</div>
+          </div>
+          <div class="intro-home-actions">
+            <button id="introStartBtn" class="primary intro-start">START</button>
+            <button id="introRulesBtn" class="intro-rules">RULES</button>
+          </div>
+        </div>
+        <div id="setupPanel" class="panel setup-panel setup-panel-hidden">
+        <h2>Choose Your Opponents</h2>
+        <p>You vs. three bots. Choose how each opponent plays.</p>
+        <div class="bot-grid">
+          <div class="bot-config">
+            <img id="bot1PreviewImg" class="bot-preview-img" src="assets/profile-runner.png" alt="" />
+            <label>Opponent 1
+              <select id="bot1">
+                <option>Basic</option>
+                <option selected>Runner</option>
+                <option>Aggressor</option>
+                <option>Random</option>
+                <option>Goofball</option>
+                <option>Expert</option>
+                <option>Grandmaster</option>
+              </select>
+            </label>
+            <p id="bot1Description" class="bot-description"></p>
+          </div>
+          <div class="bot-config">
+            <img id="bot2PreviewImg" class="bot-preview-img" src="assets/profile-expert.png" alt="" />
+            <label>Opponent 2
+              <select id="bot2">
+                <option>Basic</option>
+                <option>Runner</option>
+                <option>Aggressor</option>
+                <option>Random</option>
+                <option>Goofball</option>
+                <option selected>Expert</option>
+                <option>Grandmaster</option>
+              </select>
+            </label>
+            <p id="bot2Description" class="bot-description"></p>
+          </div>
+          <div class="bot-config">
+            <img id="bot3PreviewImg" class="bot-preview-img" src="assets/profile-basic.png" alt="" />
+            <label>Opponent 3
+              <select id="bot3">
+                <option selected>Basic</option>
+                <option>Runner</option>
+                <option>Aggressor</option>
+                <option>Random</option>
+                <option>Goofball</option>
+                <option>Expert</option>
+                <option>Grandmaster</option>
+              </select>
+            </label>
+            <p id="bot3Description" class="bot-description"></p>
+          </div>
+        </div>
+        <div class="home-actions">
+          <button id="startBtn" class="primary big">Start New Game</button>
+          <button id="resumeBtn" class="big hidden">Resume Game</button>
+        </div>
+        </div>
+      </section>
+
+      <section id="gameScreen" class="hidden">
+        <div class="table-layout">
+          <div id="opponents" class="opponents"></div>
+
+          <div class="center-zone panel">
+            <div class="pile-wrap">
+              <div>
+                <div class="label">Draw</div>
+                <button id="drawPile" class="pile card-back" title="Draw a card"></button>
+                <div id="drawCount" class="count"></div>
+              </div>
+              <div class="current-pile-column">
+                <div id="lastPlayedBy" class="last-played-by">Starting card</div>
+                <div class="label">Current</div>
+                <div id="currentCard" class="pile clickable-pile" title="View current discard history"></div>
+              </div>
+              <div>
+                <div class="label">Trash</div>
+                <button id="outPile" class="pile out-pile" title="View Trash cards"></button>
+                <div id="outCount" class="count"></div>
+              </div>
+            </div>
+            <div id="status" class="status"></div>
+            <div id="actionBar" class="action-bar">
+              <button id="playBtn" class="primary">Play Selected</button>
+              <button id="drawBtn">Draw 1 & Pass</button>
+              <button id="spiderPassBtn">Use Pest Control to Pass</button>
+            </div>
+            <div class="play-utility-rail" aria-label="Game controls">
+              <div class="utility-option-row">
+                <label id="fastBotsWrap" class="fast-bots hidden"><input id="fastBotsToggle" type="checkbox" /> Skip Bot Wait Time</label>
+                <button id="fastBotsInfoBtn" class="utility-info-button" type="button" aria-label="About Skip Bot Wait Time" title="About Skip Bot Wait Time">i</button>
+              </div>
+              <label id="showHandsWrap" class="fast-bots hidden public-cheat-control"><input id="showHandsToggle" type="checkbox" /> Show All Hands</label>
+              <div class="utility-option-row">
+                <label id="hideSpiderWrap" class="fast-bots hidden"><input id="hideSpiderToggle" type="checkbox" /> Hide Pest Control Popups</label>
+                <button id="hideSpiderInfoBtn" class="utility-info-button" type="button" aria-label="About Hide Pest Control Popups" title="About Hide Pest Control Popups">i</button>
+              </div>
+              <button id="selectWinnerBtn" class="utility-test-button hidden public-cheat-control" type="button">Select Winner</button>
+            </div>
+          </div>
+
+          <div class="you panel">
+            <div class="you-head">
+              <div><h2>You</h2><div id="youMeta" class="meta"></div></div>
+              <div id="turnBadge" class="turn-badge"></div>
+            </div>
+            <div class="label your-pantry-label">PANTRY</div>
+            <div id="yourPantry" class="pantry-row"></div>
+            <div class="hand-heading-row">
+              <div class="label your-hand-label">HAND</div>
+              <div class="hand-sort" aria-label="Organize Hand By">
+                <span>Organize Hand By</span>
+                <button id="sortColorBtn" class="sort-option" type="button">Color</button>
+                <button id="sortNumberBtn" class="sort-option active" type="button">Number</button>
+              </div>
+            </div>
+            <div id="yourHand" class="hand-row"></div>
+          </div>
+        </div>
+
+        <aside class="log-panel panel">
+          <div class="log-head"><h3>Game Log</h3><button id="clearLogBtn" class="ghost small">Clear</button></div>
+          <div id="log" class="log"></div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <div id="cardHoverTip" class="card-hover-tip hidden" role="tooltip"></div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button id="modalClose" class="modal-close">×</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+
+
+</body>
+</html>
