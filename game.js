@@ -3547,7 +3547,7 @@ function showDiscardHistory(){
 
 function showRules(){
   resetModalPresentation();
-  els.modalBody.innerHTML=`<div class="rules"><h2>Pests in the Pantry — Quick Rules</h2>
+  els.modalBody.innerHTML=`<div class="rules"><h2>Pests in the Pantry — Quick Rules</h2><p><a href="https://pestsinthepantry.com/game-rules" target="_blank" rel="noopener">Read the complete rules ↗</a></p>
   <p><strong>Goal:</strong> be first to empty your hand and all 4 Pantry Pests.</p>
   <h3>Play</h3><p>You must play a numbered Pest if you can. Play a higher number, or the same number in a stronger color. Rat/0 may be played on any non-0; on another 0 it still needs a stronger color. If you cannot make a numbered play, draw 1 and end your turn. The drawn card cannot be played immediately. Pest Control is always optional.</p>
   <h3>Color Hierarchy</h3><div class="color-hierarchy"><span class="hierarchy-color green-chip">Green</span><b>&lt;</b><span class="hierarchy-color red-chip">Red</span><b>&lt;</b><span class="hierarchy-color blue-chip">Blue</span><b>&lt;</b><span class="hierarchy-color gold-chip">Gold</span></div><p class="meta">Green is weakest and Gold is strongest. When two cards have the same number, only a stronger color can be played on top.</p>

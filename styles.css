@@ -4670,3 +4670,8 @@ body.game-ended-lock .modal:not(.hidden){backdrop-filter:blur(6px)!important;-we
   .play-utility-rail{width:auto!important;}
   .utility-option-row>.fast-bots{min-width:205px!important;}
 }
+
+/* Complete rulebook link, without changing the in-game quick rules. */
+#titleIntro .intro-home-actions{flex-wrap:wrap;justify-content:center}
+.complete-rules-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
+.complete-rules-link:focus-visible{outline:3px solid #ffd078;outline-offset:5px}
