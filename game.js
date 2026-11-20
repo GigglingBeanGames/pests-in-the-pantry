@@ -1,21 +1,21 @@
-// Pests in the Pantry v26.6 — public UI polish and Pest Control naming
+// Pests in the Pantry v29.0 — five-round scoring, final lap, refined bots
 'use strict';
 
-const COLORS=['green','red','blue','gold'];
-const COLOR_NAMES=['Green','Red','Blue','Gold'];
+const COLORS=['bronze','silver','gold'];
+const COLOR_NAMES=['Bronze','Silver','Gold'];
 const PESTS={
-  0:{name:'Rat',icon:'🐀',art:'assets/pests/rat.png',copies:8,effect:'Play on anything. Reset to 0.'},
-  1:{name:'Ant',icon:'🐜',art:'assets/pests/ant.png',copies:8,effect:'Take 1 face-up Pantry Pest.'},
-  2:{name:'Raccoon',icon:'🦝',art:'assets/pests/raccoon.png',copies:8,effect:'May take 1 numbered Pest from Trash.'},
-  3:{name:'Moth',icon:'🦋',art:'assets/pests/moth.png',copies:12,effect:'Clear pile to Trash; play again.'},
-  4:{name:'Fly',icon:'🪰',art:'assets/pests/fly.png',copies:12,effect:'Reveal 1 face-down Pantry Pest.'},
-  5:{name:'Hornet',icon:'🐝',art:'assets/pests/hornet.png',copies:8,effect:'Attack +2; next player loses turn.'},
+  0:{name:'Rat',icon:'🐀',art:'assets/pests/rat.png',copies:9,effect:'Play on anything. Reset to 0.'},
+  1:{name:'Ant',icon:'🐜',art:'assets/pests/ant.png',copies:6,effect:'Take 1 face-up or face-down Pantry Pest.'},
+  2:{name:'Raccoon',icon:'🦝',art:'assets/pests/raccoon.png',copies:6,effect:'Trash every other hand card matching this Raccoon’s color.'},
+  3:{name:'Moth',icon:'🦋',art:'assets/pests/moth.png',copies:12,effect:'Play again on this 3.'},
+  4:{name:'Fly',icon:'🪰',art:'assets/pests/fly.png',copies:12,effect:'Swap 1 hand card with a Pantry Pest; the replacement stays face-down.'},
+  5:{name:'Hornet',icon:'🐝',art:'assets/pests/hornet.png',copies:9,effect:'Attack +2; next player loses turn.'},
   6:{name:'Mosquito',icon:'🦟',art:'assets/pests/mosquito.png',copies:12,effect:'Attack +1; next player loses turn.'},
   7:{name:'Beetle',icon:'🪲',art:'assets/pests/beetle.png',copies:12,effect:'Blocks the entire attack.'},
   8:{name:'Termite',icon:'🐛',art:'assets/pests/termite.png',copies:12,effect:'Everyone passes 1 card left.'},
-  9:{name:'Scorpion',icon:'🦂',art:'assets/pests/scorpion.png',copies:4,effect:'Everyone draws 1.'},
-  10:{name:'Cockroach',icon:'🪳',art:'assets/pests/cockroach.png',copies:8,effect:'You draw 1.'},
-  S:{name:'Pest Control',icon:'🕷️',art:'assets/pests/spider.png',copies:4,effect:'Opt out of a power or use to pass.'}
+  9:{name:'Scorpion',icon:'🦂',art:'assets/pests/scorpion.png',copies:6,effect:'Everyone draws 1.'},
+  10:{name:'Cockroach',icon:'🪳',art:'assets/pests/cockroach.png',copies:9,effect:'You draw 1.'},
+  W:{name:'Wild',icon:'✦',art:null,copies:6,effect:'Use with a real card as a duplicate or to fill a run. Never plays alone.'}
 };
 
 const BOT_TYPES={
@@ -77,7 +77,7 @@ const TRAINED_EXPERT_POLICY={
   drawDuplicate:9.87,
   drawRunComplete:17.42,
   drawRunPotential:6.05,
-  drawSpider:2.89,
+  drawWild:2.89,
   drawPlayable:9.02,
   trashOne:7.47,
   trashFive:3.76
@@ -90,7 +90,7 @@ const TRAINED_GRANDMASTER_POLICY={
   sixDefense:.6409262501, attackThreat:.7525303612, zeroHold:3.28737564770,
   passDupProtect:17.9670018077, passLow:7.46605928769, passPlayableProtect:-.2385064599,
   drawDuplicate:14.8256932046, drawRunComplete:8.26500603322, drawRunPotential:.9884239914,
-  drawSpider:10.7500214027, drawPlayable:15.3212701293, trashOne:10.8467012476, trashFive:.4072704359
+  drawWild:10.7500214027, drawPlayable:15.3212701293, trashOne:10.8467012476, trashFive:.4072704359
 };
 const POWER_SEMANTIC={0:0,1:1,2:2,3:5,4:7,5:3,6:4,7:6,8:8,9:9,10:10};
 function powerSemantic(n){return Object.prototype.hasOwnProperty.call(POWER_SEMANTIC,n)?POWER_SEMANTIC[n]:n;}
@@ -136,8 +136,8 @@ function usesExpertBrain(p){return p.strategy==='Expert';}
 // Aggressor also switch into this brain.
 function grantRunKeys(hand){
   const out=new Set();
-  for(let c=0;c<4;c++){
-    const nums=[...new Set(hand.filter(x=>x.n!=='S'&&x.c===c).map(x=>x.n))].sort((a,b)=>a-b);
+  for(let c=0;c<COLORS.length;c++){
+    const nums=[...new Set(hand.filter(x=>isNumbered(x)&&x.c===c).map(x=>x.n))].sort((a,b)=>a-b);
     let i=0;
     while(i<nums.length){
       let j=i;
@@ -154,8 +154,8 @@ function grantRunKeys(hand){
 }
 function grantRunPotentialScore(hand){
   let score=0;
-  for(let c=0;c<4;c++){
-    const nums=new Set(hand.filter(x=>x.n!=='S'&&x.c===c).map(x=>x.n));
+  for(let c=0;c<COLORS.length;c++){
+    const nums=new Set(hand.filter(x=>isNumbered(x)&&x.c===c).map(x=>x.n));
     for(const n of nums){
       score+=1;
       if(nums.has(n+1))score+=6;
@@ -178,7 +178,10 @@ function grantBrainDrawOne(pi){
   const beforeRuns=grantRunKeys(p.hand);
   const runCandidates=[];
   for(const card of viewed){
-    if(card.n==='S')continue;
+    if(isWild(card)){
+      runCandidates.push({card,maxLen:99,potential:grantRunPotentialScore([...p.hand,card])+50});
+      continue;
+    }
     const after=[...p.hand,card];
     const afterRuns=grantRunKeys(after);
     const fresh=[...afterRuns].filter(k=>!beforeRuns.has(k));
@@ -197,9 +200,9 @@ function grantBrainDrawOne(pi){
     pick=runCandidates[0].card;
   }
 
-  // 2) Spider.
+  // 2) Wild. It is most valuable as flexible run material.
   if(!pick){
-    pick=viewed.find(c=>c.n==='S')||null;
+    pick=viewed.find(isWild)||null;
   }
 
   // 3) Duplicate. Prefer the number Grant already owns the MOST copies of.
@@ -234,8 +237,8 @@ function grantBrainDrawOne(pi){
   if(!pick)return null;
   const idx=viewed.findIndex(c=>c.id===pick.id);
   if(idx>=0)viewed.splice(idx,1);
-  shuffle(viewed);
-  G.deck.unshift(...viewed);
+  // Any card Grandmaster inspects but does not take stays on top of the deck.
+  G.deck.push(...viewed);
   return pick;
 }
 
@@ -246,8 +249,8 @@ function makeGrantBrain(p,drawVision){p.grantBrain=true;p.drawVision=drawVision;
 // Runner's sacred-five helpers.
 function runnerSacredFiveInfo(hand){
   const candidates=[];
-  for(let c=0;c<4;c++){
-    const nums=[...new Set(hand.filter(x=>x.n!=='S'&&x.c===c).map(x=>x.n))].sort((a,b)=>a-b);
+  for(let c=0;c<COLORS.length;c++){
+    const nums=[...new Set(hand.filter(x=>isNumbered(x)&&x.c===c).map(x=>x.n))].sort((a,b)=>a-b);
     for(let i=0;i<nums.length;i++){
       let j=i;while(j+1<nums.length&&nums[j+1]===nums[j]+1)j++;
       if(j-i+1>=5){
@@ -262,22 +265,22 @@ function runnerSacredFiveInfo(hand){
   candidates.sort((a,b)=>b.len-a.len||a.lo-b.lo);return candidates[0];
 }
 function runnerTargetMatch(card,t){return !!card&&card.n===t.n&&card.c===t.c;}
-function runnerTargetInTrash(p){const s=runnerSacredFiveInfo(p.hand);return s?G.out.find(c=>c.n!=='S'&&s.targets.some(t=>runnerTargetMatch(c,t)))||null:null;}
+function runnerTargetInTrash(p){const s=runnerSacredFiveInfo(p.hand);return s?G.out.find(c=>isNumbered(c)&&s.targets.some(t=>runnerTargetMatch(c,t)))||null:null;}
 function runnerNeighborScore(hand,card){
-  if(!card||card.n==='S')return -999;
+  if(!card||!isNumbered(card))return -999;
   let score=0;
-  for(const h of hand){if(h.id===card.id||h.n==='S'||h.c!==card.c)continue;const d=Math.abs(h.n-card.n);if(d===1)score+=6;else if(d===2)score+=2;else if(d===3)score+=.5;}
+  for(const h of hand){if(h.id===card.id||!isNumbered(h)||h.c!==card.c)continue;const d=Math.abs(h.n-card.n);if(d===1)score+=6;else if(d===2)score+=2;else if(d===3)score+=.5;}
   const nums=runnerColorNums(hand,card.c);
   for(let i=0;i<nums.length;i++){let j=i;while(j+1<nums.length&&nums[j+1]===nums[j]+1)j++;if(card.n>=nums[i]&&card.n<=nums[j]&&j-i+1>=3)score+=(j-i+1)*8;i=j;}
   return score;
 }
 function runnerBestChainLenWith(hand,card){
-  if(!card||card.n==='S')return 0;
-  const nums=[...new Set(hand.filter(x=>x.n!=='S'&&x.c===card.c).map(x=>x.n).concat([card.n]))].sort((a,b)=>a-b);
+  if(!card||!isNumbered(card))return 0;
+  const nums=[...new Set(hand.filter(x=>isNumbered(x)&&x.c===card.c).map(x=>x.n).concat([card.n]))].sort((a,b)=>a-b);
   let best=1;for(let i=0;i<nums.length;i++){let j=i;while(j+1<nums.length&&nums[j+1]===nums[j]+1)j++;best=Math.max(best,j-i+1);i=j;}return best;
 }
 function runnerBuildValue(p,card){
-  if(card.n==='S')return -100;
+  if(isWild(card))return 1000;
   const len=runnerBestChainLenWith(p.hand,card);let v=len*30;
   if(len>=6)v+=10000;else if(len===5)v+=1200;else if(len===4)v+=450;else if(len===3)v+=140;
   if(card.n<=7)v+=25;if(card.n===2)v+=35;return v;
@@ -300,8 +303,8 @@ function aggressorTopDrawOne(pi){
   const p=G.players[pi],count=Math.min(10,G.deck.length),viewed=G.deck.splice(G.deck.length-count,count);let base=null;
   const nines=viewed.filter(c=>c.n===9);if(nines.length)base=[...nines].sort((a,b)=>a.c-b.c)[0];
   else{
-    const has5=p.hand.some(c=>c.n===5),has6=p.hand.some(c=>c.n===7),spider=viewed.find(c=>c.n==='S');
-    if(has5&&has6&&spider)base=spider;
+    const has5=p.hand.some(c=>c.n===5),has6=p.hand.some(c=>c.n===7),wild=viewed.find(isWild);
+    if(has5&&has6&&wild)base=wild;
     else for(const n of [6,5]){const opts=viewed.filter(c=>c.n===n);if(opts.length){base=[...opts].sort((a,b)=>a.c-b.c)[0];break;}}
   }
   if(!base)base=[...viewed].sort((a,b)=>trainedExpertDrawValue(pi,b)-trainedExpertDrawValue(pi,a))[0];
@@ -309,11 +312,11 @@ function aggressorTopDrawOne(pi){
 }
 
 function runnerColorNums(hand,color){
-  return [...new Set(hand.filter(x=>x.n!=='S'&&x.c===color).map(x=>x.n))].sort((a,b)=>a-b);
+  return [...new Set(hand.filter(x=>isNumbered(x)&&x.c===color).map(x=>x.n))].sort((a,b)=>a-b);
 }
 function runnerLongestChain(hand){
   let best=0;
-  for(let c=0;c<4;c++){
+  for(let c=0;c<COLORS.length;c++){
     const nums=runnerColorNums(hand,c);
     let cur=0,prev=null;
     for(const n of nums){
@@ -326,7 +329,7 @@ function runnerLongestChain(hand){
 }
 function runnerExactExtenders(hand){
   const keys=new Set();
-  for(let c=0;c<4;c++){
+  for(let c=0;c<COLORS.length;c++){
     const nums=runnerColorNums(hand,c);
     let i=0;
     while(i<nums.length){
@@ -343,7 +346,7 @@ function runnerExactExtenders(hand){
 }
 function runnerBridgeCards(hand){
   const keys=new Set();
-  for(let c=0;c<4;c++){
+  for(let c=0;c<COLORS.length;c++){
     const nums=new Set(runnerColorNums(hand,c));
     for(let n=1;n<10;n++)if(nums.has(n-1)&&nums.has(n+1)&&!nums.has(n))keys.add(`${n}:${c}`);
   }
@@ -352,7 +355,7 @@ function runnerBridgeCards(hand){
 function runnerChainProfile(hand){
   const P=TRAINED_RUNNER_POLICY;
   let score=0;
-  for(let c=0;c<4;c++){
+  for(let c=0;c<COLORS.length;c++){
     const nums=runnerColorNums(hand,c);
     let i=0;
     while(i<nums.length){
@@ -367,7 +370,7 @@ function runnerChainProfile(hand){
 }
 function runnerDrawValue(pi,card){
   const p=G.players[pi],P=TRAINED_RUNNER_POLICY;
-  if(card.n==='S')return 6.9072;
+  if(isWild(card))return 30;
   let v=trainedRunnerCardBias(card.n);
   if(p.hand.some(x=>x.n===card.n))v+=P.dup;
   const key=`${card.n}:${card.c}`;
@@ -377,7 +380,7 @@ function runnerDrawValue(pi,card){
   if(runnerExactExtenders(p.hand).has(key))v+=P.drawExact+P.extendOne*(Math.max(1,afterLongest-beforeLongest));
   if(runnerBridgeCards(p.hand).has(key))v+=P.bridgeGap;
   v+=runnerChainProfile(afterHand)-runnerChainProfile(p.hand);
-  v+=p.hand.filter(x=>x.n!=='S'&&x.c===card.c).length*P.colorDensity;
+  v+=p.hand.filter(x=>isNumbered(x)&&x.c===card.c).length*P.colorDensity;
   v+=(runPotentialObj(afterHand)-runPotentialObj(p.hand))*P.potential;
   if(runCompletionLength(p.hand,card)>=3)v+=P.run[5]+6;
   if(legalCard(card,G.top))v+=P.playable;
@@ -392,7 +395,7 @@ function runnerNormalScore(pi,card,count){
   const longestLoss=runnerLongestChain(p.hand)-runnerLongestChain(after);
   v-=chainLoss*P.protectChain;
   v-=Math.max(0,longestLoss)*P.protectChain*2;
-  const colorCounts=[0,1,2,3].map(c=>p.hand.filter(x=>x.n!=='S'&&x.c===c).length);
+  const colorCounts=COLORS.map((_,c)=>p.hand.filter(x=>isNumbered(x)&&x.c===c).length);
   const maxColor=Math.max(...colorCounts);
   const dominant=new Set(colorCounts.map((v,i)=>v===maxColor?i:-1).filter(i=>i>=0));
   if(removing.length&&removing.every(x=>!dominant.has(x.c)))v+=P.dumpOffcolor;
@@ -424,7 +427,7 @@ function runnerRetrieveChoice(pi,cards){
 }
 
 
-const RANDOM_BOT_STRATEGIES=['Basic','Runner','Aggressor','Expert','Grandmaster'];
+const RANDOM_BOT_STRATEGIES=['Basic','Expert','Grandmaster'];
 function resolveBotStrategy(strategy){return strategy==='Random'?RANDOM_BOT_STRATEGIES[rand(RANDOM_BOT_STRATEGIES.length)]:strategy;}
 function botType(strategy){return BOT_TYPES[strategy]||BOT_TYPES.Basic;}
 function randomBotName(strategy,used=new Set()){
@@ -435,9 +438,9 @@ function randomBotName(strategy,used=new Set()){
 }
 
 const els={
- setup:document.getElementById('setupScreen'),game:document.getElementById('gameScreen'),start:document.getElementById('startBtn'),resume:document.getElementById('resumeBtn'),home:document.getElementById('homeBtn'),rules:document.getElementById('rulesBtn'),fastBotsWrap:document.getElementById('fastBotsWrap'),fastBotsToggle:document.getElementById('fastBotsToggle'),showHandsWrap:document.getElementById('showHandsWrap'),showHandsToggle:document.getElementById('showHandsToggle'),hideSpiderWrap:document.getElementById('hideSpiderWrap'),hideSpiderToggle:document.getElementById('hideSpiderToggle'),fastBotsInfo:document.getElementById('fastBotsInfoBtn'),hideSpiderInfo:document.getElementById('hideSpiderInfoBtn'),selectWinner:document.getElementById('selectWinnerBtn'),introStart:document.getElementById('introStartBtn'),introRules:document.getElementById('introRulesBtn'),titleIntro:document.getElementById('titleIntro'),setupPanel:document.getElementById('setupPanel'),
+  setup:document.getElementById('setupScreen'),game:document.getElementById('gameScreen'),start:document.getElementById('startBtn'),resume:document.getElementById('resumeBtn'),home:document.getElementById('homeBtn'),rules:document.getElementById('rulesBtn'),fastBotsWrap:document.getElementById('fastBotsWrap'),fastBotsToggle:document.getElementById('fastBotsToggle'),showHandsWrap:document.getElementById('showHandsWrap'),showHandsToggle:document.getElementById('showHandsToggle'),fastBotsInfo:document.getElementById('fastBotsInfoBtn'),selectWinner:document.getElementById('selectWinnerBtn'),introStart:document.getElementById('introStartBtn'),introRules:document.getElementById('introRulesBtn'),titleIntro:document.getElementById('titleIntro'),setupPanel:document.getElementById('setupPanel'),
  opponents:document.getElementById('opponents'),current:document.getElementById('currentCard'),drawCount:document.getElementById('drawCount'),outCount:document.getElementById('outCount'),outPile:document.getElementById('outPile'),drawPile:document.getElementById('drawPile'),
- status:document.getElementById('status'),play:document.getElementById('playBtn'),draw:document.getElementById('drawBtn'),spiderPass:document.getElementById('spiderPassBtn'),
+ status:document.getElementById('status'),play:document.getElementById('playBtn'),draw:document.getElementById('drawBtn'),
  pantry:document.getElementById('yourPantry'),hand:document.getElementById('yourHand'),youMeta:document.getElementById('youMeta'),turnBadge:document.getElementById('turnBadge'),turnCounter:document.getElementById('turnCounter'),toast:document.getElementById('toast'),cardHoverTip:document.getElementById('cardHoverTip'),lastPlayedBy:document.getElementById('lastPlayedBy'),sortColor:document.getElementById('sortColorBtn'),sortNumber:document.getElementById('sortNumberBtn'),log:document.getElementById('log'),clearLog:document.getElementById('clearLogBtn'),
  modal:document.getElementById('modal'),modalBody:document.getElementById('modalBody'),modalClose:document.getElementById('modalClose')
 };
@@ -456,13 +459,14 @@ const newHumanCardIds=new Set();
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const botThinkDelay=()=>els.fastBotsToggle?.checked?0:3000+Math.random()*2000;
-const humanSpiderPopupsHidden=()=>Boolean(els.hideSpiderToggle?.checked);
 async function waitWhileHome(session=gameSessionId){
   while(homePaused&&G&&!G.over&&session===gameSessionId)await sleep(100);
 }
 const rand=n=>Math.floor(Math.random()*n);
 function shuffle(a){for(let i=a.length-1;i>0;i--){let j=rand(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
-function cardLabel(c){return c.n==='S'?'Pest Control':`${COLOR_NAMES[c.c]} ${c.n} ${PESTS[c.n].name}`;}
+function isWild(c){return c?.n==='W';}
+function isNumbered(c){return typeof c?.n==='number';}
+function cardLabel(c){return isWild(c)?'Wild':`${COLOR_NAMES[c.c]} ${c.n} ${PESTS[c.n].name}`;}
 function log(msg){
   const d=document.createElement('div');
   d.textContent=msg;
@@ -637,28 +641,17 @@ async function animatePlayedCards(pi,cards){
 
 function trainedExpertDrawValue(pi,card){
   const p=G.players[pi], P=expertPolicyFor(pi);
-  if(card.n==='S'){
-    if(p.baseStrategy==='Grandmaster'){
-      // v4 learned Spider as highly valuable while Pantry pests remain. Once the
-      // Pantry is empty, reduce its draw value near the finish because Pest Control
-      // cannot be the final winning card.
-      if(p.pantry.length)return P.drawSpider;
-      if(p.hand.length<=1)return -100;
-      if(p.hand.length===2)return P.drawSpider-18;
-      if(p.hand.length===3)return P.drawSpider-8;
-    }
-    return P.drawSpider;
-  }
+  if(isWild(card))return P.drawRunComplete+P.drawWild;
   let v=trainedExpertCardBias(card.n,pi);
   if(p.hand.some(x=>x.n===card.n))v+=P.drawDuplicate;
   const gain=runPotentialObj([...p.hand,card])-runPotentialObj(p.hand);
   if(gain>=3)v+=P.drawRunComplete;
   else if(gain>=1.2)v+=P.drawRunPotential;
   if(legalCard(card,G.top))v+=P.drawPlayable;
-  if(card.n===1&&exposed(pi).length)v+=P.oneFaceup;
-  if(card.n===4&&hiddenPan(pi).length)v+=P.sevenHidden;
-  if(card.n===2&&botRetrieveChoice(pi))v+=P.twoUseful;
-  if(card.n===3&&p.hand.some(x=>x.n!=='S'&&x.n<3))v+=P.fiveLow;
+  if(card.n===1&&G.players[pi].pantry.length)v+=P.oneFaceup;
+  if(card.n===4&&p.pantry.length&&p.hand.length>1)v+=P.oneFaceup;
+  if(card.n===2&&p.hand.some(x=>isNumbered(x)&&x.c===card.c))v+=P.twoUseful;
+  if(card.n===3&&p.hand.some(x=>isNumbered(x)&&x.n<3))v+=P.fiveLow;
   return v;
 }
 function trainedExpertDrawOne(pi){
@@ -779,15 +772,15 @@ function recordDiscardEntry(pi,cards,{type='play',effect=null,label=null}={}){
 function buildDeck(){
  const d=[];
  for(let n=0;n<=10;n++){
-   const q=PESTS[n].copies, per=q/4;
-   for(let c=0;c<4;c++)for(let k=0;k<per;k++)d.push({n,c,id:`${n}-${c}-${k}-${Math.random()}`});
+   const q=PESTS[n].copies, per=q/COLORS.length;
+   for(let c=0;c<COLORS.length;c++)for(let k=0;k<per;k++)d.push({n,c,id:`${n}-${c}-${k}-${Math.random()}`});
  }
- for(let k=0;k<4;k++)d.push({n:'S',c:null,id:`S-${k}-${Math.random()}`});
+ for(let k=0;k<PESTS.W.copies;k++)d.push({n:'W',c:null,id:`W-${k}-${Math.random()}`});
  return shuffle(d);
 }
 
 function legalCard(c,top){
- if(c.n==='S')return false;
+ if(!isNumbered(c))return false;
  if(!top)return true;
  if(c.n===0)return top.n!==0 || c.c>top.c;
  return c.n>top.n || (c.n===top.n && c.c>top.c);
@@ -796,20 +789,25 @@ function legalCard(c,top){
 function makePlayer(name,strategy,human=false){
   const baseStrategy=strategy;
   let activeStrategy=strategy;
-  const p={name,strategy:activeStrategy,baseStrategy,human,hand:[],pantry:[],knownSingle:null,runnerExpert:false,advancedAggressor:false,rage:0,grantBrain:false,drawVision:1};
+  const p={name,strategy:activeStrategy,baseStrategy,human,hand:[],pantry:[],knownSingle:null,runnerExpert:false,advancedAggressor:false,rage:0,grantBrain:false,drawVision:1,totalScore:0};
   if(['Basic','Expert','Grandmaster'].includes(strategy)){
-    makeGrantBrain(p,strategy==='Basic'?2:strategy==='Expert'?4:8);
+    // Basic and Expert draw the top card. Grandmaster alone may choose
+    // between the top two cards using its trained preference.
+    makeGrantBrain(p,strategy==='Grandmaster'?2:1);
   }
   return p;
 }
 
 function placeStartingCard(){
+  const skippedWilds=[];
   while(true){
     if(!G.deck.length)recycle();
     const c=G.deck.pop();
     if(!c)return;
+    if(isWild(c)){skippedWilds.push(c);continue;}
     G.discard.push(c);
-    if(c.n!=='S'){
+    if(isNumbered(c)){
+      if(skippedWilds.length){G.deck.push(...skippedWilds);shuffle(G.deck);}
       G.top=c;
       G.lastPlayedBy='Starting card';
       G.discardHistory=[];
@@ -830,7 +828,6 @@ function showGameScreen(){
   els.home.classList.remove('hidden');
   els.fastBotsWrap.classList.remove('hidden');
   els.showHandsWrap.classList.remove('hidden');
-  els.hideSpiderWrap?.classList.remove('hidden');
   els.selectWinner?.classList.remove('hidden');
   els.resume.classList.add('hidden');
   render();
@@ -868,7 +865,6 @@ function showHomeScreen(){
   els.home.classList.add('hidden');
   els.fastBotsWrap.classList.add('hidden');
   els.showHandsWrap.classList.add('hidden');
-  els.hideSpiderWrap?.classList.add('hidden');
   els.selectWinner?.classList.add('hidden');
   els.resume.classList.toggle('hidden',!G||G.over);
   resetHomePantryScene();
@@ -890,7 +886,7 @@ function newGame(){
     usedNames.add(name);
     players.push(makePlayer(name,strategies[i]));
   }
-  G={players,deck:buildDeck(),discard:[],out:[],top:null,current:firstPlayer,startingPlayer:firstPlayer,startingCardActive:true,attack:0,attackOwner:null,passes:0,lastSuccessful:null,lastPlayedBy:'Starting card',discardHistory:[],over:false,turns:0};
+  G={players,deck:buildDeck(),discard:[],out:[],top:null,current:firstPlayer,startingPlayer:firstPlayer,startingCardActive:true,attack:0,attackOwner:null,passes:0,lastSuccessful:null,lastPlayedBy:'Starting card',discardHistory:[],over:false,turns:0,round:1,maxRounds:5,finalLapTrigger:null,finalTurnsRemaining:null,finalLapJustStarted:false};
   for(const player of G.players){
     player.pantry=G.deck.splice(-4).map((card,slot)=>({card,up:false,slot}));
     player.hand=G.deck.splice(-8);
@@ -938,57 +934,13 @@ async function resolveCompletedPassCycle(lastPasser){
   log(`${G.players[starter].name} gets the open restart.`);
   return true;
 }
-function findSpider(pi){return G.players[pi].hand.findIndex(c=>c.n==='S');}
-function canUseSpider(pi){return findSpider(pi)>=0 && !(G.players[pi].hand.length===1&&G.players[pi].pantry.length===0);}
-function spiderOnlyHandCardWithPantry(pi){
-  const p=G.players[pi];
-  return p.hand.length===1&&p.hand[0].n==='S'&&p.pantry.length>0;
-}
-async function showSpiderPlayEffect(pi){
-  const p=G.players[pi];
-  const overlay=document.createElement('div');
-  overlay.className='spider-play-flash';
-  overlay.innerHTML=`
-    <div class="spider-flash-burst"></div>
-    <img src="${PESTS.S.art}" alt="" class="spider-flash-art" />
-    <div class="spider-flash-copy">
-      <div class="spider-flash-player">${p.name}</div>
-      <div class="spider-flash-title">PEST CONTROL!</div>
-    </div>`;
-  document.body.appendChild(overlay);
-  requestAnimationFrame(()=>overlay.classList.add('show'));
-  await sleep(1350);
-  overlay.classList.add('hide');
-  await sleep(260);
-  overlay.remove();
-}
-async function burnSpider(pi,reason='uses Pest Control'){
-  const p=G.players[pi];
-  const idx=findSpider(pi);
-  if(idx<0)return false;
-
-  const [spider]=p.hand.splice(idx,1);
-  G.discard.splice(Math.max(0,G.discard.length-1),0,spider);
-  recordDiscardEntry(pi,[spider],{type:'spider',label:reason});
-  log(`${p.name} ${reason}.`);
-  await showSpiderPlayEffect(pi);
-
-  // Pest Control can empty a hand just like a numbered play. If Pantry pests remain,
-  // immediately pull one before play continues.
-  if(p.hand.length===0 && p.pantry.length>0){
-    await pullPantry(pi);
-  }
-
-  render();
-  return true;
-}
 function totalCards(pi){return G.players[pi].hand.length+G.players[pi].pantry.length;}
 function exposed(pi){return G.players[pi].pantry.map((x,i)=>x.up?i:-1).filter(i=>i>=0);}
 function hiddenPan(pi){return G.players[pi].pantry.map((x,i)=>!x.up?i:-1).filter(i=>i>=0);}
 
 function cardEl(card,{clickable=false,selectedCard=false,faceDown=false,small=false}={}){
  const d=document.createElement('div');
- d.className=`game-card pest-${card.n} ${faceDown?'face-down':(card.n==='S'?'spider-card':COLORS[card.c])} ${clickable?'clickable':''} ${selectedCard?'selected':''} ${small?'known-card':''}`;
+ d.className=`game-card pest-${card.n} ${faceDown?'face-down':(isWild(card)?'wild-card':COLORS[card.c])} ${clickable?'clickable':''} ${selectedCard?'selected':''} ${small?'known-card':''}`;
  const info=PESTS[card.n];
  const art=(!faceDown&&info?.art)?`<div class="card-art-frame"><img class="card-art" src="${info.art}" alt="" draggable="false"></div>`:'';
  const value=faceDown?'':card.n;
@@ -999,7 +951,7 @@ function cardEl(card,{clickable=false,selectedCard=false,faceDown=false,small=fa
    <div class="num num-right">${value}</div>
    ${art}
    <div class="pest">${faceDown?'':info.name}</div>
-   <div class="icon">${faceDown?'✦':''}</div>`;
+   <div class="icon">${faceDown?'✦':(isWild(card)?'✦':'')}</div>`;
  return d;
 }
 
@@ -1059,13 +1011,13 @@ function sortHumanHand(){
   const hand=G.players[0].hand;
 
   hand.sort((a,b)=>{
-    // Pest Control is a special card and stays at the far left in either view.
-    if(a.n==='S'&&b.n!=='S')return -1;
-    if(b.n==='S'&&a.n!=='S')return 1;
-    if(a.n==='S'&&b.n==='S')return 0;
+    // Wild cards stay at the far left in either view.
+    if(isWild(a)&&!isWild(b))return -1;
+    if(isWild(b)&&!isWild(a))return 1;
+    if(isWild(a)&&isWild(b))return 0;
 
     if(handSortMode==='color'){
-      // Strongest color first: Gold, Blue, Red, Green.
+      // Strongest color first: Gold, Silver, Bronze.
       if(a.c!==b.c)return b.c-a.c;
       // Within each color: strongest number first.
       return b.n-a.n;
@@ -1172,9 +1124,9 @@ function render() {
     miniHand.className = 'mini-hand' + (els.showHandsToggle?.checked ? ' revealed-opponent-hand' : '');
     const opponentHand=els.showHandsToggle?.checked
       ? [...p.hand].sort((a,b)=>{
-          if(a.n==='S'&&b.n!=='S')return -1;
-          if(b.n==='S'&&a.n!=='S')return 1;
-          if(a.n==='S'&&b.n==='S')return 0;
+          if(isWild(a)&&!isWild(b))return -1;
+          if(isWild(b)&&!isWild(a))return 1;
+          if(isWild(a)&&isWild(b))return 0;
           if(a.c!==b.c)return b.c-a.c;
           return b.n-a.n;
         })
@@ -1274,7 +1226,8 @@ function render() {
     els.hand.appendChild(el);
   });
 
-  els.youMeta.textContent = `Hand ${G.players[0].hand.length} · Pantry ${G.players[0].pantry.length}`;
+  els.youMeta.textContent = `Round ${G.round}/${G.maxRounds} · Score ${G.players[0].totalScore} · Hand ${G.players[0].hand.length} · Pantry ${G.players[0].pantry.length}`;
+  els.turnCounter.textContent = `Round ${G.round}/${G.maxRounds} · Turn ${G.turns+1}`;
   els.turnBadge.textContent = G.over
     ? 'Game Over'
     : G.current === 0
@@ -1285,42 +1238,34 @@ function render() {
   const isHumanTurn = G.current === 0 && !G.over && !pileClearing;
   const underAttack = isHumanTurn && G.attack > 0;
   const hasNormalPlay = normalLegalPlays(0).length > 0 || allRuns(0).length > 0;
-  const hasSpider = findSpider(0) >= 0;
-  const canFinishWithSpider = G.players[0].hand.length === 1 && G.players[0].pantry.length === 0;
 
   if (underAttack) {
     const hasRequiredDefense = hasNumberedAttackDefense(0);
     els.play.textContent = attackButtonLabel();
     els.draw.textContent = `Take +${G.attack} Cards`;
-    els.spiderPass.textContent = 'Use Pest Control on Attack';
 
     els.draw.disabled = hasRequiredDefense;
     els.play.disabled = selected.size === 0;
-    els.spiderPass.disabled = !hasSpider || canFinishWithSpider;
 
     if (hasRequiredDefense) {
       els.status.textContent = `Attack incoming: +${G.attack}. You have a legal defense, so you must play it.`;
-    } else if (hasSpider) {
-      els.status.textContent = `Attack incoming: +${G.attack}. Take it or optionally use Pest Control.`;
     } else {
       els.status.textContent = `Attack incoming: +${G.attack}. You have no numbered defense — take the cards.`;
     }
   } else {
     els.play.textContent = 'Play Selected';
     els.draw.textContent = 'Draw 1 & Pass';
-    els.spiderPass.textContent = 'Use Pest Control to Pass';
 
     els.draw.disabled = !isHumanTurn || hasNormalPlay;
     els.play.disabled = !isHumanTurn || selected.size === 0;
-    els.spiderPass.disabled = !isHumanTurn || !hasSpider || canFinishWithSpider;
 
     els.status.textContent = G.over
       ? ''
       : G.current === 0
         ? hasNormalPlay
-          ? 'You must make a legal play.'
-          : 'No legal Pest play — draw 1 or use Pest Control to pass.'
-        : `${G.players[G.current].name} is thinking…`;
+          ? `${G.finalTurnsRemaining!==null?'Final lap · ':''}You must make a legal play.`
+          : 'No legal play — draw 1 and pass.'
+        : `${G.finalTurnsRemaining!==null?'Final lap · ':''}${G.players[G.current].name} is thinking…`;
   }
 }
 
@@ -1346,61 +1291,62 @@ function attackButtonLabel(){
   return 'Play Selected';
 }
 
-function normalLegalPlays(pi){return G.players[pi].hand.filter(c=>legalCard(c,G.top));}
+function normalLegalPlays(pi){return G.players[pi].hand.filter(c=>isNumbered(c)&&legalCard(c,G.top));}
 
-function allRuns(pi){
- const hand=G.players[pi].hand,have=new Map();
- for(let c=0;c<4;c++)have.set(c,new Set(hand.filter(x=>x.n!=='S'&&x.c===c).map(x=>x.n)));
- const out=[];
- for(let c=0;c<4;c++){
-   const nums=[...have.get(c)].sort((a,b)=>a-b);
-   for(let i=0;i<nums.length;i++)for(let j=i+2;j<nums.length;j++){
-     const seq=nums.slice(i,j+1);if(seq.some((n,k)=>k&&n!==seq[k-1]+1))break;
-     const ok=seq[0]===0?legalCard({n:0,c},G.top):legalCard({n:seq.at(-1),c},G.top);
-     if(ok)out.push({c,seq});
-   }
- }
- return out;
+function activeRunCards(realCards,attackMode=false){
+  return realCards.filter(card=>attackMode
+    ? card.n===7 || ([5,6].includes(card.n)&&legalCard(card,G.top))
+    : legalCard(card,G.top));
 }
 
-function analyzeRunCards(cards){
-  if(cards.length<3)return null;
-  const colors=new Set(cards.map(c=>c.c));
-  const sorted=[...cards].sort((a,b)=>a.n-b.n);
-  const consecutive=colors.size===1
-    && new Set(sorted.map(c=>c.n)).size===sorted.length
-    && sorted.every((c,i)=>i===0||c.n===sorted[i-1].n+1);
-  if(!consecutive)return null;
-  return {cards:sorted,c:sorted[0].c,seq:sorted.map(c=>c.n),top:sorted.at(-1)};
+function runVariantsFromCards(cards,attackMode=false){
+  if(cards.length<3)return [];
+  const real=cards.filter(isNumbered),wilds=cards.filter(isWild);
+  if(!real.length)return [];
+  const colors=new Set(real.map(c=>c.c)),nums=real.map(c=>c.n);
+  if(colors.size!==1||new Set(nums).size!==nums.length)return [];
+  const color=real[0].c,length=cards.length,variants=[];
+  for(let start=0;start+length-1<=10;start++){
+    const seq=Array.from({length},(_,i)=>start+i);
+    if(!nums.every(n=>seq.includes(n)))continue;
+    if(seq.filter(n=>!nums.includes(n)).length!==wilds.length)continue;
+    const playableCards=activeRunCards(real,attackMode);
+    if(!playableCards.length)continue;
+    variants.push({type:'run',cards:[...real,...wilds],realCards:real,wildCards:wilds,wildCount:wilds.length,c:color,seq,playableCards,attackPowers:attackMode?[...new Set(playableCards.map(c=>c.n))]:undefined});
+  }
+  return variants;
 }
 
-function isRunNormallyLegal(run){
-  return run.seq[0]===0
-    ? legalCard({n:0,c:run.c},G.top)
-    : legalCard(run.top,G.top);
+function analyzeRunCards(cards,attackMode=false){
+  const variants=runVariantsFromCards(cards,attackMode);
+  return variants.sort((a,b)=>b.playableCards.length-a.playableCards.length||a.seq[0]-b.seq[0])[0]||null;
 }
 
-function allAttackRuns(pi){
-  const hand=G.players[pi].hand;
-  const have=new Map();
-  for(let c=0;c<4;c++)have.set(c,new Set(hand.filter(x=>x.n!=='S'&&x.c===c).map(x=>x.n)));
-  const runs=[];
-  for(let c=0;c<4;c++){
-    const nums=[...have.get(c)].sort((a,b)=>a-b);
-    for(let i=0;i<nums.length;i++){
-      for(let j=i+2;j<nums.length;j++){
-        const seq=nums.slice(i,j+1);
-        if(seq.some((n,k)=>k&&n!==seq[k-1]+1))break;
-        const cards=seq.map(n=>hand.find(card=>card.n===n&&card.c===c));
-        const run={cards,c,seq,top:cards.at(-1)};
-        const powers=seq.filter(n=>[5,6,7].includes(n));
-        if(!powers.length)continue;
-        if(isRunNormallyLegal(run)||seq.includes(7))runs.push({...run,attackPowers:powers});
-      }
+function generateRuns(pi,attackMode=false){
+  const hand=G.players[pi].hand,wilds=hand.filter(isWild),out=[],seen=new Set();
+  for(let color=0;color<COLORS.length;color++){
+    const byNum=new Map();
+    for(const card of hand)if(isNumbered(card)&&card.c===color&&!byNum.has(card.n))byNum.set(card.n,card);
+    for(let start=0;start<=10;start++)for(let length=3;start+length-1<=10;length++){
+      const seq=Array.from({length},(_,i)=>start+i);
+      const realCards=seq.map(n=>byNum.get(n)).filter(Boolean);
+      if(!realCards.length)continue;
+      const missing=length-realCards.length;
+      if(missing>wilds.length)continue;
+      const usedWilds=wilds.slice(0,missing),playableCards=activeRunCards(realCards,attackMode);
+      if(!playableCards.length)continue;
+      const cards=[...realCards,...usedWilds];
+      const key=cards.map(c=>c.id).sort().join('|')+`:${attackMode?'A':'N'}`;
+      if(seen.has(key))continue;
+      seen.add(key);
+      out.push({type:'run',cards,realCards,wildCards:usedWilds,wildCount:usedWilds.length,c:color,seq,playableCards,attackPowers:attackMode?[...new Set(playableCards.map(c=>c.n))]:undefined});
     }
   }
-  return runs;
+  return out;
 }
+
+function allRuns(pi){return generateRuns(pi,false);}
+function allAttackRuns(pi){return generateRuns(pi,true);}
 
 function hasNumberedAttackDefense(pi){
   const hand=G.players[pi].hand;
@@ -1412,7 +1358,7 @@ function hasNumberedAttackDefense(pi){
 function explainCardNotLegal(card){
   if(!G.top)return 'That card would be legal because the pile is open.';
   const top=G.top;
-  if(card.n==='S')return 'Pest Control is not a numbered Pest. Select Pest Control by itself and press Play Selected to use it as a pass.';
+  if(isWild(card))return 'A Wild cannot be played by itself. Combine it with at least one real card as a duplicate or in a run.';
   if(card.n===0){
     if(top.n!==0)return 'A 0 can be played here, so this card should be legal.';
     if(card.c<=top.c)return `${cardLabel(card)} cannot beat ${cardLabel(top)}. On another 0, you need a stronger color.`;
@@ -1423,16 +1369,14 @@ function explainCardNotLegal(card){
 }
 
 function explainBadMultiCardPlay(cards){
-  const colors=new Set(cards.filter(c=>c.n!=='S').map(c=>c.c));
-  const nums=cards.filter(c=>c.n!=='S').map(c=>c.n);
-  if(cards.some(c=>c.n==='S'))return 'Pest Control cannot be combined with numbered cards. Select Pest Control by itself and press Play Selected to pass.';
+  const real=cards.filter(isNumbered);
+  const colors=new Set(real.map(c=>c.c));
+  const nums=real.map(c=>c.n);
+  if(!real.length)return 'Wild cards cannot be played without at least one real numbered card.';
   if(cards.length<3)return 'Those cards are not duplicates, and a run needs at least 3 cards.';
-  if(colors.size>1)return 'That cannot be a run because every card in a run must be the same color.';
-  if(new Set(nums).size!==nums.length)return 'A run cannot contain duplicate numbers. Use duplicates by themselves, or select one of each number for the run.';
-  const sorted=[...nums].sort((a,b)=>a-b);
-  const gap=sorted.findIndex((n,i)=>i>0&&n!==sorted[i-1]+1);
-  if(gap>=0)return `That run has a gap between ${sorted[gap-1]} and ${sorted[gap]}. Run numbers must be consecutive.`;
-  return 'A multi-card play must be matching-number duplicates or a same-color consecutive run of at least 3 cards.';
+  if(colors.size>1)return 'That cannot be a run because every real card in a run must be the same color.';
+  if(new Set(nums).size!==nums.length)return 'A run cannot contain duplicate real numbers. Use those cards as duplicates instead.';
+  return 'Those real cards and Wilds cannot form one same-color consecutive run between 0 and 10.';
 }
 
 function validateSelection(pi,indices,attackMode=false){
@@ -1440,60 +1384,45 @@ function validateSelection(pi,indices,attackMode=false){
   const cards=indices.map(i=>hand[i]).filter(Boolean);
   if(!cards.length)return{ok:false,msg:'Select at least one card.'};
 
-  // A single Pest Control played with Play Selected is handled exactly like the Pest Control button.
-  if(cards.length===1&&cards[0].n==='S')return{ok:true,type:'spider'};
-  if(cards.some(c=>c.n==='S'))return{ok:false,msg:'Pest Control cannot be combined with other cards. Select only Pest Control, then press Play Selected to pass.'};
-
-  const nums=new Set(cards.map(c=>c.n));
-  const run=analyzeRunCards(cards);
+  const real=cards.filter(isNumbered),wilds=cards.filter(isWild);
+  if(!real.length)return{ok:false,msg:'A Wild cannot be played alone. Include at least one real numbered card.'};
+  const nums=new Set(real.map(c=>c.n));
+  const run=analyzeRunCards(cards,attackMode);
+  const useRunFirst=!!run&&real.length===1&&wilds.length>=2;
 
   if(attackMode){
-    if(nums.size===1){
-      const n=cards[0].n;
-      const strongest=cards.reduce((a,b)=>a.c>b.c?a:b);
+    if(nums.size===1&&!useRunFirst){
+      const n=real[0].n;
+      const strongest=real.reduce((a,b)=>a.c>b.c?a:b);
       if(n===7)return{ok:true,type:cards.length>1?'duplicates':'single',cards,n,top:strongest,attackPowers:[7]};
-      if(![5,6].includes(n))return{ok:false,msg:`${PESTS[n].name}/${n} cannot answer this attack. Use 5 or 6 to add to it, Beetle/7 to block it, a defensive run containing 5/6/7, or Pest Control.`};
+      if(![5,6].includes(n))return{ok:false,msg:`${PESTS[n].name}/${n} cannot answer this attack. Use a real 5 or 6 to add to it, a real Beetle/7 to block it, or a defensive run activated by one of those real cards.`};
       if(!legalCard(strongest,G.top))return{ok:false,msg:`That ${n} cannot continue the attack: ${explainCardNotLegal(strongest)}`};
       return{ok:true,type:cards.length>1?'duplicates':'single',cards,n,top:strongest,attackPowers:[n]};
     }
 
     if(!run)return{ok:false,msg:`During an attack, ${explainBadMultiCardPlay(cards)} A defensive run must also contain 5, 6, or 7.`};
-    const attackPowers=run.seq.filter(n=>[5,6,7].includes(n));
+    const attackPowers=run.attackPowers;
     if(!attackPowers.length)return{ok:false,msg:`The ${run.seq.join('-')} run is a valid run shape, but it cannot answer an attack because it contains no 5, 6, or 7.`};
-    if(!isRunNormallyLegal(run)&&!run.seq.includes(7)){
-      const anchor=run.seq[0]===0?{n:0,c:run.c}:run.top;
-      return{ok:false,msg:`The run itself cannot enter on the current pile: ${explainCardNotLegal(anchor)} A run containing Beetle/7 is the exception while defending.`};
-    }
     return{ok:true,type:'run',...run,attackPowers};
   }
 
   if(cards.length===1){
-    if(!legalCard(cards[0],G.top))return{ok:false,msg:explainCardNotLegal(cards[0])};
-    return{ok:true,type:'single',cards,n:cards[0].n,top:cards[0]};
+    if(!legalCard(real[0],G.top))return{ok:false,msg:explainCardNotLegal(real[0])};
+    return{ok:true,type:'single',cards,n:real[0].n,top:real[0]};
   }
 
-  if(nums.size===1){
-    const strongest=cards.reduce((a,b)=>a.c>b.c?a:b);
+  if(nums.size===1&&!useRunFirst){
+    const strongest=real.reduce((a,b)=>a.c>b.c?a:b);
     if(!legalCard(strongest,G.top))return{ok:false,msg:`Those are valid duplicates, but their strongest card still cannot enter the pile. ${explainCardNotLegal(strongest)}`};
     return{ok:true,type:'duplicates',cards,n:strongest.n,top:strongest};
   }
 
   if(!run)return{ok:false,msg:explainBadMultiCardPlay(cards)};
-  if(!isRunNormallyLegal(run)){
-    const anchor=run.seq[0]===0?{n:0,c:run.c}:run.top;
-    return{ok:false,msg:`The ${COLOR_NAMES[run.c]} ${run.seq.join('-')} run is formed correctly, but it cannot be played on the current pile. ${explainCardNotLegal(anchor)}`};
-  }
   return{ok:true,type:'run',...run};
 }
 
 function resetModalPresentation(){
-  els.modal.querySelector('.modal-card')?.classList.remove('spider-choice-modal');
   els.modalBody.querySelectorAll('.bot-win-summary').forEach(el=>el.remove());
-}
-
-function modalUsesPestControl(title,html,choices){
-  const text=[title,html,...(choices||[]).map(ch=>ch.label)].filter(Boolean).join(' ').toLowerCase();
-  return text.includes('spider') || text.includes('pest control');
 }
 
 let victoryHomeTimer=null;
@@ -1612,9 +1541,8 @@ function botWinSummaryHtml(pi){
   return `<div class="bot-win-summary"><img src="${info.image}" alt="${p.name}"><div class="cup">🏆</div><div class="txt">${p.name} takes the pantry!</div></div>`;
 }
 
-async function modalChoice(title,html,choices,allowClose=false,bodyClass='',decoratePestControl=true){
+async function modalChoice(title,html,choices,allowClose=false,bodyClass=''){
   resetModalPresentation();
-  if(decoratePestControl&&modalUsesPestControl(title,html,choices))els.modal.querySelector('.modal-card')?.classList.add('spider-choice-modal');
   els.modalBody.className=[bodyClass,'decision-modal'].filter(Boolean).join(' ');
   els.modalBody.innerHTML=`<h2>${title}</h2>${html||''}<div id="choiceGrid" class="choice-grid"></div>`;
   const grid=document.getElementById('choiceGrid');
@@ -1667,13 +1595,19 @@ async function choosePantryPositionModal(pi,title='Choose a Pantry Pest',mode='t
   const isTake=mode==='take';
   const isAnt=mode==='ant';
   const isFly=mode==='fly';
+  const isFlyTake=mode==='flyTake';
+  const isSwap=mode==='swap';
 
   els.modalBody.className='pantry-choice-modal';
-  const helper=isTake
+  const helper=isSwap
+    ? 'Choose the Pantry slot to swap. Its current Pest comes into your hand, and your chosen hand card goes here face-down.'
+    : isTake
     ? 'Choose any Pantry Pest to take into your hand.'
     : isAnt
-      ? 'Choose one of your face-up Pantry Pests.'
-      : 'Choose one of your face-down Pantry Pests to reveal.';
+      ? 'Choose any Pantry Pest to take into your hand.'
+      : isFlyTake
+        ? 'Choose one of your face-up Pantry Pests to take into your hand.'
+        : 'Choose one of your face-down Pantry Pests to reveal.';
   els.modalBody.innerHTML=`
     <h2>${title}</h2>
     <p class="meta">${helper}</p>
@@ -1688,7 +1622,7 @@ async function choosePantryPositionModal(pi,title='Choose a Pantry Pest',mode='t
     els.modalClose.style.display='none';
 
     p.pantry.forEach((item,idx)=>{
-      const eligible=isTake || (isAnt&&item.up) || (isFly&&!item.up);
+      const eligible=isTake || isAnt || isSwap || (isFly&&!item.up) || (isFlyTake&&item.up);
       const b=document.createElement('button');
       b.type='button';
       b.className=`pantry-choice-button ${eligible?'eligible':'ineligible'}`;
@@ -1742,10 +1676,8 @@ async function pullPantry(pi){
   if(p.human){
     idx=await choosePantryPositionModal(pi,'Choose a Pantry Pest to take','take');
   }else if(p.grantBrain&&downs.length){
-    // Final Grandmaster Pantry rule: prefer the unknown face-down Pest.
-    // The one exception is a revealed Pest Control, which is too valuable to ignore.
-    const revealedSpider=ups.find(i=>p.pantry[i].card.n==='S');
-    idx=revealedSpider!==undefined?revealedSpider:downs[rand(downs.length)];
+    // Grandmaster Pantry rule: prefer the unknown face-down Pest.
+    idx=downs[rand(downs.length)];
   }else if(ups.length){
     idx=botChoosePantry(pi,ups);
   }else{
@@ -1753,11 +1685,20 @@ async function pullPantry(pi){
   }
   const item=p.pantry.splice(idx,1)[0];
   p.hand.push(item.card);
+  maybeStartFinalLap(pi);
   if(p.pantry.length===0)reactPantryCleared(pi);
   p.knownSingle=item.up?item.card:null;
   log(`${p.name} takes ${item.up?cardLabel(item.card):'a face-down Pest'} from the Pantry.`);
   render();
   return item.card;
+}
+function maybeStartFinalLap(pi){
+  if(!G||G.finalLapTrigger!==null||G.players[pi].pantry.length)return;
+  G.finalLapTrigger=pi;
+  G.finalTurnsRemaining=G.players.length;
+  G.finalLapJustStarted=true;
+  log(`${G.players[pi].name} takes their final Pantry Pest! Everyone, including ${G.players[pi].name}, gets one final turn.`);
+  showToast('FINAL LAP! Everyone gets one more turn.');
 }
 function botChoosePantry(pi,ups){
  const p=G.players[pi];return ups.sort((a,b)=>botCardUtility(pi,p.pantry[b].card)-botCardUtility(pi,p.pantry[a].card))[0];
@@ -1767,53 +1708,33 @@ async function resolveEffect(pi,n){
   const p=G.players[pi];
 
   if(n===1){
-    const ups=exposed(pi);
-    if(!ups.length)return;
+    if(!p.pantry.length)return;
     if(p.human){
-      const idx=await choosePantryPositionModal(pi,'Ant: choose a face-up Pantry Pest','ant');
+      const idx=await choosePantryPositionModal(pi,'Ant: choose any Pantry Pest','ant');
       const item=p.pantry.splice(idx,1)[0];
       p.hand.push(item.card);
+      maybeStartFinalLap(pi);
       if(p.pantry.length===0)reactPantryCleared(pi);
-      log(`You take ${cardLabel(item.card)} from your Pantry.`);
-    }else if(botShouldUseAnt(pi)){
-      const idx=botChoosePantry(pi,ups);
+      log(`You take ${item.up?cardLabel(item.card):'a face-down Pest'} from your Pantry.`);
+    }else{
+      const downs=hiddenPan(pi);
+      const ups=exposed(pi);
+      // Ant bots always prefer the unknown face-down Pantry cards.
+      const idx=downs.length?downs[rand(downs.length)]:botChoosePantry(pi,ups);
       const item=p.pantry.splice(idx,1)[0];
       p.hand.push(item.card);
+      maybeStartFinalLap(pi);
       if(p.pantry.length===0)reactPantryCleared(pi);
-      log(`${p.name} uses Ant to take ${cardLabel(item.card)}.`);
+      log(`${p.name} uses Ant to take ${item.up?cardLabel(item.card):'a face-down Pest'}.`);
     }
   }
 
-  if(n===2){
-    const candidates=G.out.filter(c=>c.n!=='S');
-    if(!candidates.length)return;
-    if(p.human){
-      const ordered=sortOutCards(candidates);
-      const ch=await chooseCardModal('Raccoon: take a numbered Pest from Trash?',ordered,{allowSkip:true});
-      if(ch>=0){
-        const card=ordered[ch];
-        const idx=G.out.findIndex(x=>x.id===card.id);
-        G.out.splice(idx,1);
-        p.hand.push(card);
-        log(`You retrieve ${cardLabel(card)} from Trash.`);
-      }
-    }else{
-      const card=botRetrieveChoice(pi);
-      if(card){
-        const idx=G.out.findIndex(x=>x.id===card.id);
-        G.out.splice(idx,1);
-        p.hand.push(card);
-        log(`${p.name} retrieves ${cardLabel(card)} from Trash.`);
-      }
-    }
-  }
+  // Raccoon's purge resolves in performPlay before a Pantry Pest can be taken.
 
   if(n===3){
-    log(`${p.name} uses Moth. The pile is moving to Trash…`);
-    await clearPileAnimated(900);
-    log(`${p.name} clears the pile to Trash and gets another play.`);
+    log(`${p.name} uses Moth and plays again on the 3.`);
   }
-  if(n===4)await resolveFly(pi);
+  if(n===4)await resolvePantrySwap(pi);
   if(n===5){
     G.attackOwner=pi;
     G.attack+=2;
@@ -1827,46 +1748,39 @@ async function resolveEffect(pi,n){
   if(n===8)await resolveTermite(pi);
   if(n===9)await resolveScorpion(pi);
   if(n===10){
-    if(p.human&&canUseSpider(pi)&&!humanSpiderPopupsHidden()){
-      const use=await modalChoice('Cockroach','Use Pest Control to avoid drawing?',[
-        {label:'Draw 1',value:false,primary:true},
-        {label:'Use Pest Control',value:true}
-      ]);
-      if(use)await burnSpider(pi,'uses Pest Control on their own Cockroach');
-      else{
-        await drawCardsAnimated(pi,1);
-        // Do not make a bot look annoyed at the draw caused by its own Cockroach.
-        if(p.human)reactToDraw(pi,1);
-      }
-    }else if(!p.human&&canUseSpider(pi)&&!isRageAggressor(p)&&(spiderOnlyHandCardWithPantry(pi)||p.hand.length<=2)){
-      await burnSpider(pi,'uses Pest Control on Cockroach');
-    }else{
-      await drawCardsAnimated(pi,1);
-      // Do not make a bot look annoyed at the draw caused by its own Cockroach.
-      if(p.human)reactToDraw(pi,1);
-    }
+    await drawCardsAnimated(pi,1);
+    // Do not make a bot look annoyed at the draw caused by its own Cockroach.
+    if(p.human)reactToDraw(pi,1);
   }
   render();
 }
 
-async function resolveFly(pi){
+async function resolvePantrySwap(pi){
   const p=G.players[pi];
-  const hid=hiddenPan(pi);
-  if(!hid.length){
-    log(`${p.name} has no face-down Pantry Pest to reveal.`);
+  if(!p.pantry.length){
+    log(`${p.name} has no Pantry Pest to swap with Fly.`);
     return;
   }
-
-  if(p.human){
-    const choice=await choosePantryPositionModal(pi,'Fly: choose a face-down Pantry Pest to reveal','fly');
-    p.pantry[choice].up=true;
-    log(`You reveal ${cardLabel(p.pantry[choice].card)} in your Pantry.`);
-    render();
-  }else{
-    const idx=hid[rand(hid.length)];
-    p.pantry[idx].up=true;
-    log(`${p.name} reveals ${cardLabel(p.pantry[idx].card)} in their Pantry.`);
+  if(!p.hand.length){
+    log(`${p.name} has no hand card to place into the Pantry.`);
+    return;
   }
+  const handIdx=p.human
+    ? await chooseCardModal('Fly: choose a hand card to place face-down in your Pantry',p.hand)
+    : botSwapHandChoice(pi);
+  if(handIdx<0||handIdx>=p.hand.length)return;
+  const pantryIdx=p.human
+    ? await choosePantryPositionModal(pi,'Fly: choose a Pantry slot to swap','swap')
+    : rand(p.pantry.length);
+  const outgoing=p.hand.splice(handIdx,1)[0];
+  const incoming=p.pantry[pantryIdx].card;
+  const wasUp=p.pantry[pantryIdx].up;
+  p.pantry[pantryIdx]={...p.pantry[pantryIdx],card:outgoing,up:false};
+  p.hand.push(incoming);
+  p.knownSingle=p.hand.length===1?incoming:null;
+  const takenLabel=p.human||wasUp?cardLabel(incoming):'a face-down Pest';
+  log(`${p.name} uses Fly to put ${cardLabel(outgoing)} face-down in the Pantry and take ${takenLabel}.`);
+  render();
 }
 
 
@@ -1903,56 +1817,28 @@ async function showReceivedCardModal(fromPi,card){
 
 async function resolveTermite(source){
   const passes=new Map();
-  const opted=new Set();
 
-  // Everyone decides before any cards move. A Pest Control user is completely removed
-  // from the exchange: they neither give nor receive.
+  // Everyone chooses before any cards move.
   for(let q=0;q<4;q++){
     const p=G.players[q];
     if(!p.hand.length)continue;
 
     if(p.human){
-      if(canUseSpider(q)&&!humanSpiderPopupsHidden()){
-        const use=await modalChoice(
-          'Termite',
-          'Pass a card left, or use Pest Control to opt out?',
-          [
-            {label:'Choose a card to pass',value:false,primary:true},
-            {label:'Use Pest Control',value:true}
-          ]
-        );
-        if(use){
-          await burnSpider(q,'uses Pest Control to opt out of Termite');
-          opted.add(q);
-          continue;
-        }
-      }
-
       const ch=await chooseCardModal('Choose a card to pass left',p.hand);
       if(ch>=0)passes.set(q,p.hand[ch]);
     }else{
-      const grantAllNumberedInRuns=p.grantBrain&&
-        p.hand.some(c=>c.n!=='S')&&
-        p.hand.filter(c=>c.n!=='S').every(c=>grantCompletedRunIds(p.hand).has(c.id));
-      if(canUseSpider(q)&&!isRageAggressor(p)&&(grantAllNumberedInRuns||spiderOnlyHandCardWithPantry(q)||totalCards(q)<=2||(p.strategy==='Expert'&&p.hand.length<=3&&runPotentialObj(p.hand)>=4))){
-        await burnSpider(q,'uses Pest Control to opt out of Termite');
-        opted.add(q);
-        continue;
-      }
-
       const idx=botPassChoice(q);
       if(idx>=0)passes.set(q,p.hand[idx]);
     }
   }
 
-  const participants=[0,1,2,3].filter(q=>passes.has(q)&&!opted.has(q));
+  const participants=[0,1,2,3].filter(q=>passes.has(q));
   if(participants.length<2){
     log('Termite exchange resolves, but there are not enough participating players to pass cards.');
     return;
   }
 
-  // Route each card to the next participating player clockwise, skipping anyone
-  // who used Spider (or otherwise is not participating).
+  // Route each card to the next participating player clockwise.
   const transfers=[];
   for(const from of participants){
     let to=(from+1)%4;
@@ -1972,7 +1858,7 @@ async function resolveTermite(source){
     G.players[to].knownSingle=G.players[to].hand.length===1?card:null;
   }
 
-  log('Termite exchange resolves. Pest Control users are skipped.');
+  log('Termite exchange resolves. Everyone passes one card left.');
   render();
 
   const humanTransfer=transfers.find(t=>t.to===0);
@@ -1985,27 +1871,17 @@ async function resolveTermite(source){
 async function resolveScorpion(source){
   let rageGain=0;
   for(let q=0;q<4;q++){
-    let avoided=false;
-    if(canUseSpider(q)&&!isRageAggressor(G.players[q])){
-      if(G.players[q].human&&!humanSpiderPopupsHidden()){
-        const use=await modalChoice('Scorpion','Use Pest Control to avoid drawing 1?',[{label:'Draw 1',value:false,primary:true},{label:'Use Pest Control',value:true}]);
-        if(use){await burnSpider(q,'uses Pest Control on Scorpion');avoided=true;}
-      }else if(!G.players[q].human&&((G.players[q].grantBrain&&G.players[q].pantry.length>0)||spiderOnlyHandCardWithPantry(q)||totalCards(q)<=2)){
-        await burnSpider(q,'uses Pest Control on Scorpion');avoided=true;
-      }
-    }
-    if(avoided)continue;
     await drawCardsAnimated(q,1);if(q!==source||G.players[q].human)reactToDraw(q,1);
     if(q!==source&&isRageAggressor(G.players[source]))rageGain++;
   }
   if(rageGain)await addAggressorRage(G.players[source],rageGain);
-  log('Scorpion makes everyone draw unless they opt out.');
+  log('Scorpion makes everyone draw 1.');
 }
 
 function completedRunSegments(hand){
   const segments=[];
-  for(let c=0;c<4;c++){
-    const nums=[...new Set(hand.filter(x=>x.n!=='S'&&x.c===c).map(x=>x.n))].sort((a,b)=>a-b);
+  for(let c=0;c<COLORS.length;c++){
+    const nums=[...new Set(hand.filter(x=>isNumbered(x)&&x.c===c).map(x=>x.n))].sort((a,b)=>a-b);
     let i=0;
     while(i<nums.length){
       let j=i;
@@ -2028,7 +1904,7 @@ function runInfoForCard(hand,card){
 }
 
 function runCompletionLength(hand,card){
-  if(card.n==='S')return 0;
+  if(!isNumbered(card))return 0;
   const before=completedRunSegments(hand).filter(r=>r.c===card.c);
   const after=completedRunSegments([...hand,card]).filter(r=>r.c===card.c&&r.nums.includes(card.n));
   if(!after.length)return 0;
@@ -2041,15 +1917,9 @@ function isFinishingPlay(p,play){
   return play.cards.length===p.hand.length;
 }
 
-function isSpiderBridgePlay(p,play,effect){
-  const spiders=p.hand.filter(c=>c.n==='S').length;
-  const numbered=p.hand.length-spiders;
-  return spiders===1 && play.cards.length===numbered && [5,8,9,10].includes(effect) && p.pantry.length>0;
-}
-
 function baseBotPassChoice(pi){
   const p=G.players[pi];
-  const eligible=p.hand.map((c,i)=>({c,i})).filter(x=>x.c.n!=='S');
+  const eligible=p.hand.map((c,i)=>({c,i}));
   if(!eligible.length)return -1;
   if(eligible.length===1)return eligible[0].i;
 
@@ -2075,6 +1945,7 @@ function baseBotPassChoice(pi){
 
   function score(x){
     const c=x.c;
+    if(isWild(c))return -1000;
     const info=runInfoForCard(p.hand,c);
     let s=0; // higher = happier to pass
 
@@ -2149,7 +2020,7 @@ function grantCompletedRunIds(hand){
   const ids=new Set();
   for(const r of completedRunSegments(hand)){
     for(const c of hand){
-      if(c.n!=='S'&&c.c===r.c&&r.nums.includes(c.n))ids.add(c.id);
+      if(isNumbered(c)&&c.c===r.c&&r.nums.includes(c.n))ids.add(c.id);
     }
   }
   return ids;
@@ -2166,7 +2037,7 @@ function grantSafeNormalPlay(pi){
 
   // Safe singles outside completed runs.
   for(const c of p.hand){
-    if(c.n==='S'||ids.has(c.id)||!legalCard(c,G.top))continue;
+    if(!isNumbered(c)||ids.has(c.id)||!legalCard(c,G.top))continue;
     candidates.push({
       score:botNormalScore(pi,c,1),
       play:{type:'single',cards:[c],n:c.n,top:c,effect:c.n}
@@ -2176,7 +2047,7 @@ function grantSafeNormalPlay(pi){
   // Safe duplicate dumps using only copies outside completed runs.
   const byN=new Map();
   for(const c of p.hand){
-    if(c.n==='S'||ids.has(c.id)||!legalCard(c,G.top))continue;
+    if(!isNumbered(c)||ids.has(c.id)||!legalCard(c,G.top))continue;
     if(!byN.has(c.n))byN.set(c.n,[]);
     byN.get(c.n).push(c);
   }
@@ -2192,12 +2063,13 @@ function grantSafeNormalPlay(pi){
 
   // Playing the completed run itself is always safe.
   for(const r of allRuns(pi)){
-    const cards=r.cards||r.seq.map(n=>p.hand.find(c=>c.n===n&&c.c===r.c));
+    const cards=r.cards;
     if(!cards.every(Boolean))continue;
-    const effect=botChooseRunEffect(pi,r.seq);
+    const effect=botChooseRunEffect(pi,r.playableCards.map(c=>c.n));
+    const top=r.playableCards.filter(c=>c.n===effect).sort((a,b)=>b.c-a.c)[0];
     candidates.push({
-      score:cards.length*8+trainedExpertCardBias(effect,pi),
-      play:{type:'run',cards,seq:r.seq,c:r.c,top:cards.at(-1),effect}
+      score:cards.length*8+cards.filter(isWild).length*14+trainedExpertCardBias(effect,pi),
+      play:{type:'run',cards,seq:r.seq,c:r.c,top,effect,playableCards:r.playableCards}
     });
   }
 
@@ -2209,12 +2081,12 @@ function grantSafeNormalPlay(pi){
 function baseGrantAwarePassChoice(pi){
   const p=G.players[pi];
   if(isMegaRunner(p)){
-    const eligible=p.hand.map((c,i)=>({c,i})).filter(x=>x.c.n!=='S');if(!eligible.length)return -1;
+    const eligible=p.hand.map((c,i)=>({c,i})).filter(x=>!isWild(x.c));if(!eligible.length)return p.hand.findIndex(isWild);
     const sacred=runnerSacredFiveInfo(p.hand);let pool=sacred?eligible.filter(x=>x.c.c!==sacred.c):eligible;if(!pool.length)pool=eligible;
     pool.sort((a,b)=>runnerNeighborScore(p.hand,a.c)-runnerNeighborScore(p.hand,b.c)||b.c.n-a.c.n||a.c.c-b.c.c);return pool[0].i;
   }
   if(isRageAggressor(p)){
-    const eligible=p.hand.map((c,i)=>({c,i})).filter(x=>x.c.n!=='S');if(!eligible.length)return -1;
+    const eligible=p.hand.map((c,i)=>({c,i})).filter(x=>!isWild(x.c));if(!eligible.length)return p.hand.findIndex(isWild);
     let pool=eligible.filter(x=>![5,6,7,9].includes(x.c.n));if(!pool.length)pool=eligible;
     // Give away expendable low-value cards; never choose protected weapons unless forced.
     pool.sort((a,b)=>a.c.n-b.c.n||a.c.c-b.c.c);return pool[0].i;
@@ -2232,7 +2104,7 @@ function botPassChoice(pi){
   if(!p?.grantBrain)return baseGrantAwarePassChoice(pi);
 
   const ids=grantCompletedRunIds(p.hand);
-  const safe=p.hand.map((c,i)=>({c,i})).filter(x=>x.c.n!=='S'&&!ids.has(x.c.id));
+  const safe=p.hand.map((c,i)=>({c,i})).filter(x=>!isWild(x.c)&&!ids.has(x.c.id));
 
   // Prefer any non-run card to breaking a completed run.
   if(safe.length){
@@ -2244,7 +2116,7 @@ function botPassChoice(pi){
 
   // If forced to break a run, sacrifice its lowest NON-ZERO number first.
   // Zero is protected unless it is literally the only option.
-  const forced=p.hand.map((c,i)=>({c,i})).filter(x=>x.c.n!=='S'&&ids.has(x.c.id));
+  const forced=p.hand.map((c,i)=>({c,i})).filter(x=>isNumbered(x.c)&&ids.has(x.c.id));
   if(forced.length){
     let pool=forced.filter(x=>x.c.n!==0);
     if(!pool.length)pool=forced;
@@ -2263,8 +2135,8 @@ function CounterObj(arr){
 
 function runPotentialObj(hand){
   let v=0;
-  for(let c=0;c<4;c++){
-    const s=new Set(hand.filter(x=>x.n!=='S'&&x.c===c).map(x=>x.n));
+  for(let c=0;c<COLORS.length;c++){
+    const s=new Set(hand.filter(x=>isNumbered(x)&&x.c===c).map(x=>x.n));
     for(const n of s){
       if(s.has(n+1))v+=1.5;
       if(s.has(n+2))v+=.8;
@@ -2278,20 +2150,20 @@ function runPotentialObj(hand){
 function botCardUtility(pi,c){
   const p=G.players[pi];
   const threat=Math.min(...G.players.map((x,i)=>i===pi?99:totalCards(i)));
-  if(c.n==='S')return 20;
+  if(isWild(c))return 30;
 
   let v=({0:7,1:7,2:3,3:2,4:1,5:10,6:2,7:6,8:3,9:0,10:6}[powerSemantic(c.n)]||0);
 
   if(c.n===1){
-    if(exposed(pi).length)v+=8;
-    else if(p.pantry.length)v-=5;
+    if(hiddenPan(pi).length)v+=9;
+    else if(exposed(pi).length)v+=7;
     else v-=8;
   }
-  if(c.n===2){
-    const trashChoice=G.out.some(x=>x.n!=='S');
-    v+=trashChoice?3:-5;
+  if(c.n===2)v+=p.hand.filter(x=>isNumbered(x)&&x.c===c.c).length*4;
+  if(c.n===4){
+    if(p.pantry.length&&p.hand.length)v+=5;
+    else v-=5;
   }
-  if(c.n===4&&hiddenPan(pi).length)v+=3;
   if(c.n===8&&threat<=2)v+=6;
   if(c.n===9&&threat<=2)v+=5;
   if(c.n===10){
@@ -2301,9 +2173,37 @@ function botCardUtility(pi,c){
   return v;
 }
 
+function botSwapTrashChoice(pi,cards=G.out.filter(isNumbered)){
+  if(!cards.length)return null;
+
+  // Start with the bot's established Raccoon preference, then guarantee that
+  // every bot still chooses its favorite available card for this required swap.
+  const preferred=botRetrieveChoice(pi);
+  if(preferred&&cards.some(c=>c.id===preferred.id))return preferred;
+
+  const p=G.players[pi];
+  return [...cards].sort((a,b)=>{
+    const runGainB=runPotentialObj([...p.hand,b])-runPotentialObj(p.hand);
+    const runGainA=runPotentialObj([...p.hand,a])-runPotentialObj(p.hand);
+    const duplicateB=p.hand.some(c=>c.n===b.n)?5:0;
+    const duplicateA=p.hand.some(c=>c.n===a.n)?5:0;
+    return (botCardUtility(pi,b)+runGainB*3+duplicateB)-(botCardUtility(pi,a)+runGainA*3+duplicateA) || b.n-a.n || b.c-a.c;
+  })[0];
+}
+
+function botSwapHandChoice(pi){
+  const p=G.players[pi];
+  if(!p.hand.length)return -1;
+
+  // Termite's pass logic already expresses each personality's least-favorite
+  // expendable card while protecting completed runs and Wilds.
+  const idx=botPassChoice(pi);
+  return idx>=0?idx:0;
+}
+
 function baseBotRetrieveChoice(pi){
   const p=G.players[pi];
-  const cards=G.out.filter(c=>c.n!=='S');
+  const cards=G.out.filter(isNumbered);
   if(!cards.length)return null;
 
   // v13 trained Expert retrieval policy.
@@ -2328,7 +2228,7 @@ function baseBotRetrieveChoice(pi){
   // A Raccoon/2 is never retrieved unless it directly completes a real run.
   if(p.strategy==='Aggressor'){
     const priority=[9,10,8,4,3,5,0,1,7];
-    const counts=CounterObj(p.hand.filter(c=>c.n!=='S').map(c=>c.n));
+    const counts=CounterObj(p.hand.filter(isNumbered).map(c=>c.n));
     for(const n of priority){
       if(!counts[n])continue;
       const opts=cards.filter(c=>c.n===n);
@@ -2363,7 +2263,7 @@ function baseBotRetrieveChoice(pi){
   let best=null,bestV=1.5;
   for(const c of nonMoths){
     let v=values[c.n]??0;
-    if(c.n===1&&!exposed(pi).length)v-=4;
+    if(c.n===1&&!p.pantry.length)v-=4;
     if(counts[c.n]>=2)v+=3;
     if(v>bestV){bestV=v;best=c;}
   }
@@ -2371,7 +2271,7 @@ function baseBotRetrieveChoice(pi){
 }
 
 function botRetrieveChoice(pi){
-  const p=G.players[pi],cards=G.out.filter(c=>c.n!=='S');if(!cards.length)return null;
+  const p=G.players[pi],cards=G.out.filter(isNumbered);if(!cards.length)return null;
   if(isMegaRunner(p)){
     const sacred=runnerSacredFiveInfo(p.hand);
     if(sacred){const exact=cards.filter(c=>sacred.targets.some(t=>runnerTargetMatch(c,t)));return exact.length?[...exact].sort((a,b)=>b.c-a.c)[0]:null;}
@@ -2437,7 +2337,7 @@ function botRetrieveChoice(pi){
 }
 
 function botShouldUseAnt(pi){
-  return exposed(pi).length>0;
+  return G.players[pi].pantry.length>0;
 }
 
 
@@ -2451,12 +2351,12 @@ function botNormalScore(pi,c,count){
   if(p.strategy==='Expert'){
     const P=expertPolicyFor(pi);
     let v=trainedExpertCardBias(n,pi)+count*P.dupBonus;
-    if(n===1&&exposed(pi).length)v+=P.oneFaceup;
-    if(n===4&&hiddenPan(pi).length)v+=P.sevenHidden;
-    if(n===2&&botRetrieveChoice(pi))v+=P.twoUseful;
-    if(n===3&&p.hand.some(x=>x.n!=='S'&&x.n<3))v+=P.fiveLow;
+    if(n===1&&p.pantry.length)v+=P.oneFaceup;
+    if(n===4&&p.pantry.length&&p.hand.length>1)v+=P.oneFaceup;
+    if(n===2&&p.hand.some(x=>isNumbered(x)&&x.c===c.c&&x.id!==c.id))v+=P.twoUseful;
+    if(n===3&&p.hand.some(x=>isNumbered(x)&&x.n<3))v+=P.fiveLow;
     if(n===7)v-=P.sixDefense;
-    if(n===0&&p.hand.some(x=>x.n!=='S'&&x.n!==0&&legalCard(x,G.top)))v-=P.zeroHold;
+    if(n===0&&p.hand.some(x=>isNumbered(x)&&x.n!==0&&legalCard(x,G.top)))v-=P.zeroHold;
     if((n===5||n===6)&&totalCards(next)<=2)v+=P.attackThreat;
     return v;
   }
@@ -2464,7 +2364,7 @@ function botNormalScore(pi,c,count){
   if(p.strategy==='Runner')return runnerNormalScore(pi,c,count);
 
   if(G.top===null&&n===0)s-=16;
-  const hasLowerLegal=p.hand.some(x=>x.n!=='S'&&x.n<n&&legalCard(x,G.top));
+  const hasLowerLegal=p.hand.some(x=>isNumbered(x)&&x.n<n&&legalCard(x,G.top));
   if(n===10&&hasLowerLegal&&(G.top===null||G.top.n<=1))s-=count>1?4:11;
   if(n===5&&totalCards(next)<=3)s+=5;
   if(n===6&&totalCards(next)<=3)s+=3;
@@ -2473,11 +2373,9 @@ function botNormalScore(pi,c,count){
   if(n===9&&threat<=2)s+=5;
 
   if(n===1&&p.pantry.length){
-    if(exposed(pi).length){
-      if(p.strategy==='Expert')s+=14;
-      if(p.strategy==='Runner')s+=8;
-      if(p.strategy==='Aggressor')s+=4;
-    }else if(['Expert','Runner'].includes(p.strategy))s-=7;
+    if(p.strategy==='Expert')s+=14;
+    if(p.strategy==='Runner')s+=8;
+    if(p.strategy==='Aggressor')s+=4;
   }
 
   if(p.strategy==='Aggressor'){
@@ -2542,34 +2440,37 @@ function botChooseAttackRunEffect(pi,run){
 
 function baseBotChoosePlay(pi,attackMode=false){
   const p=G.players[pi];
+  const wilds=p.hand.filter(isWild);
 
   if(attackMode){
     const choices=[];
+    const attackRuns=allAttackRuns(pi);
     const blocks=p.hand.filter(c=>c.n===7);
     if(blocks.length){
-      const use=blocks;
+      const use=attackRuns.some(r=>r.cards.some(isWild))?blocks:[...blocks,...wilds];
       let blockScore=11+use.length*2;
       if(p.strategy==='Expert')blockScore=8+use.length*2+trainedExpertCardBias(7,pi);
-      choices.push({score:blockScore,play:{type:use.length>1?'duplicates':'single',cards:use,n:7,top:use.reduce((a,b)=>a.c>b.c?a:b),effect:7}});
+      choices.push({score:blockScore,play:{type:use.length>1?'duplicates':'single',cards:use,n:7,top:blocks.reduce((a,b)=>a.c>b.c?a:b),effect:7}});
     }
     for(const n of [5,6]){
       const legalCards=p.hand.filter(c=>c.n===n&&legalCard(c,G.top));
       if(legalCards.length){
         const strongest=legalCards.reduce((a,b)=>a.c>b.c?a:b);
-        const use=legalCards;
+        const use=attackRuns.some(r=>r.cards.some(isWild))?legalCards:[...legalCards,...wilds];
         let attackScore=(n===5?8:6)+use.length*2+(p.strategy==='Aggressor'?14:0);
         if(p.strategy==='Expert')attackScore+=trainedExpertCardBias(n,pi);
         if(p.strategy==='Aggressor'&&n===5)attackScore+=8; // 5 before 6
         choices.push({score:attackScore,play:{type:use.length>1?'duplicates':'single',cards:use,n,top:strongest,effect:n}});
       }
     }
-    for(const run of allAttackRuns(pi)){
+    for(const run of attackRuns){
       const effect=botChooseAttackRunEffect(pi,run);
-      let score=run.cards.length*5+(effect===7?8:effect===5?6:4);
+      const top=run.playableCards.filter(c=>c.n===effect).sort((a,b)=>b.c-a.c)[0];
+      let score=run.cards.length*5+run.cards.filter(isWild).length*14+(effect===7?8:effect===5?6:4);
       if(p.strategy==='Runner')score+=run.cards.length*4;
       if(p.strategy==='Expert')score+=3;
       if(p.strategy==='Aggressor'&&[5,6].includes(effect))score+=12;
-      choices.push({score,play:{type:'run',cards:run.cards,seq:run.seq,c:run.c,top:run.top,effect,attackPowers:run.attackPowers}});
+      choices.push({score,play:{type:'run',cards:run.cards,seq:run.seq,c:run.c,top,effect,attackPowers:run.attackPowers,playableCards:run.playableCards}});
     }
     if(!choices.length)return null;
     // Expert and Runner always take a legal response that empties the hand.
@@ -2587,6 +2488,8 @@ function baseBotChoosePlay(pi,attackMode=false){
 
   const choices=[];
   const leg=normalLegalPlays(pi);
+  const availableRuns=allRuns(pi);
+  const preserveWilds=availableRuns.some(r=>r.cards.some(isWild));
 
   if(p.strategy==='Goofball'){
     // One rare moment of competence: if four or more identical numbered cards can be played, dump them immediately.
@@ -2604,21 +2507,21 @@ function baseBotChoosePlay(pi,attackMode=false){
     const legalSame=allSame.filter(c=>legalCard(c,G.top));
     if(!legalSame.length)continue;
     const strongest=legalSame.reduce((a,b)=>a.c>b.c?a:b);
-    let use=allSame;
+    let use=preserveWilds?allSame:[...allSame,...wilds];
 
 
     if(p.strategy==='Aggressor'){
       // Aggressor cashes duplicates aggressively across the board.
-      use=allSame;
+      use=preserveWilds?allSame:[...allSame,...wilds];
     }else if(p.strategy==='Expert'){
       // The evolved Expert learned that cashing duplicates aggressively is highly effective.
-      use=allSame;
+      use=preserveWilds?allSame:[...allSame,...wilds];
     }else{
-      if([0,1,2,7].includes(n))use=[strongest];
+      if([0,1,2,7].includes(n))use=preserveWilds?[strongest]:[strongest,...wilds];
       if(p.strategy==='Runner'){
         const wouldEmpty=allSame.length===p.hand.length;
         if(wouldEmpty){
-          use=allSame;
+          use=preserveWilds?allSame:[...allSame,...wilds];
         }else if(allSame.length>1){
           // The trained Runner generally avoids cashing duplicates if doing so
           // damages a developing same-color chain.
@@ -2632,16 +2535,17 @@ function baseBotChoosePlay(pi,attackMode=false){
       if(p.strategy==='Goofball'&&allSame.length>1&&Math.random()<.82)use=[strongest];
     }
 
-    const play={type:use.length>1?'duplicates':'single',cards:use,n,top:use.reduce((a,b)=>a.c>b.c?a:b)};
+    const play={type:use.length>1?'duplicates':'single',cards:use,n,top:strongest,effect:n};
     choices.push({score:botNormalScore(pi,play.top,use.length),play});
   }
 
   const includeRuns=p.strategy!=='Goofball'||Math.random()<.12;
   if(includeRuns){
-    for(const r of allRuns(pi)){
-      const cards=r.seq.map(n=>p.hand.find(c=>c.n===n&&c.c===r.c));
-      const effect=botChooseRunEffect(pi,r.seq);
-      let score=cards.length*5+botCardUtility(pi,{n:effect,c:r.c});
+    for(const r of availableRuns){
+      const cards=r.cards;
+      const effect=botChooseRunEffect(pi,r.playableCards.map(c=>c.n));
+      const top=r.playableCards.filter(c=>c.n===effect).sort((a,b)=>b.c-a.c)[0];
+      let score=cards.length*5+cards.filter(isWild).length*14+botCardUtility(pi,{n:effect,c:r.c});
       if(p.strategy==='Runner'){
         score=runnerRunScore(pi,cards);
       }else if(p.strategy==='Expert'){
@@ -2649,7 +2553,7 @@ function baseBotChoosePlay(pi,attackMode=false){
       }else if(p.strategy==='Aggressor'&&[5,6,8,9].includes(effect)){
         score+=9;
       }
-      choices.push({score,play:{type:'run',cards,seq:r.seq,c:r.c,top:cards.at(-1),effect}});
+      choices.push({score,play:{type:'run',cards,seq:r.seq,c:r.c,top,effect,playableCards:r.playableCards}});
     }
   }
 
@@ -2661,15 +2565,6 @@ function baseBotChoosePlay(pi,attackMode=false){
     if(finishing.length){
       finishing.sort((a,b)=>b.play.cards.length-a.play.cards.length||b.score-a.score);
       return finishing[0].play;
-    }
-    // High-impact card + Pest Control bridge into Pantry is an elite endgame line.
-    const bridges=choices.filter(x=>{
-      const effect=x.play.type==='run'?x.play.effect:x.play.n;
-      return isSpiderBridgePlay(p,x.play,effect);
-    });
-    if(bridges.length){
-      bridges.sort((a,b)=>b.score-a.score);
-      return bridges[0].play;
     }
   }
   if(p.strategy==='Runner'){
@@ -2695,7 +2590,7 @@ function runnerMegaPlay(pi,attackMode=false){
   const p=G.players[pi];
   if(attackMode){
     const mega=allAttackRuns(pi).filter(r=>r.seq.length>=6).sort((a,b)=>b.seq.length-a.seq.length);
-    if(mega.length){const r=mega[0],effect=botChooseAttackRunEffect(pi,r);return {type:'run',cards:r.cards,seq:r.seq,c:r.c,top:r.top,effect,attackPowers:r.attackPowers};}
+    if(mega.length){const r=mega[0],effect=botChooseAttackRunEffect(pi,r),top=r.playableCards.find(c=>c.n===effect);return {type:'run',cards:r.cards,seq:r.seq,c:r.c,top,effect,attackPowers:r.attackPowers,playableCards:r.playableCards};}
     const sacred=runnerSacredFiveInfo(p.hand);
     let candidates=[];
     for(const n of [7,6,5])for(const c of p.hand.filter(c=>c.n===n&&(n===7||legalCard(c,G.top))))candidates.push(c);
@@ -2705,7 +2600,7 @@ function runnerMegaPlay(pi,attackMode=false){
     const c=pool[0];return {type:'single',cards:[c],n:c.n,top:c,effect:c.n};
   }
   const mega=allRuns(pi).filter(r=>r.seq.length>=6).sort((a,b)=>b.seq.length-a.seq.length);
-  if(mega.length){const r=mega[0],cards=r.seq.map(n=>p.hand.find(c=>c.n===n&&c.c===r.c)),effect=botChooseRunEffect(pi,r.seq);return {type:'run',cards,seq:r.seq,c:r.c,top:cards.at(-1),effect};}
+  if(mega.length){const r=mega[0],cards=r.cards,effect=botChooseRunEffect(pi,r.playableCards.map(c=>c.n)),top=r.playableCards.find(c=>c.n===effect);return {type:'run',cards,seq:r.seq,c:r.c,top,effect,playableCards:r.playableCards};}
   const sacred=runnerSacredFiveInfo(p.hand);
   if(sacred){
     const target=runnerTargetInTrash(p);
@@ -2716,15 +2611,15 @@ function runnerMegaPlay(pi,attackMode=false){
         const fives=p.hand.filter(c=>c.n===3&&c.c!==sacred.c&&legalCard(c,G.top)).sort((a,b)=>a.c-b.c);if(fives.length){const c=fives[0];return {type:'single',cards:[c],n:3,top:c,effect:3};}
       }
     }
-    const nonsacred=p.hand.filter(c=>c.n!=='S'&&c.c!==sacred.c&&legalCard(c,G.top));
+    const nonsacred=p.hand.filter(c=>isNumbered(c)&&c.c!==sacred.c&&legalCard(c,G.top));
     const zeros=nonsacred.filter(c=>c.n===0);if(zeros.length){const all=p.hand.filter(c=>c.n===0&&c.c!==sacred.c);return {type:all.length>1?'duplicates':'single',cards:all,n:0,top:all.reduce((a,b)=>a.c>b.c?a:b),effect:0};}
     if(nonsacred.length){nonsacred.sort((a,b)=>{const av=a.n*20-runnerNeighborScore(p.hand,a)*8,bv=b.n*20-runnerNeighborScore(p.hand,b)*8;return bv-av||b.c-a.c;});const c=nonsacred[0];return {type:'single',cards:[c],n:c.n,top:c,effect:c.n};}
-    const forced=p.hand.filter(c=>c.n!=='S'&&legalCard(c,G.top));if(forced.length){forced.sort((a,b)=>runnerNeighborScore(p.hand,a)-runnerNeighborScore(p.hand,b)||b.n-a.n);const c=forced[0];return {type:'single',cards:[c],n:c.n,top:c,effect:c.n};}
+    const forced=p.hand.filter(c=>isNumbered(c)&&legalCard(c,G.top));if(forced.length){forced.sort((a,b)=>runnerNeighborScore(p.hand,a)-runnerNeighborScore(p.hand,b)||b.n-a.n);const c=forced[0];return {type:'single',cards:[c],n:c.n,top:c,effect:c.n};}
     return null;
   }
   const zeros=p.hand.filter(c=>c.n===0&&legalCard(c,G.top));if(zeros.length){const all=p.hand.filter(c=>c.n===0);return {type:all.length>1?'duplicates':'single',cards:all,n:0,top:all.reduce((a,b)=>a.c>b.c?a:b),effect:0};}
-  const twos=p.hand.filter(c=>c.n===2&&legalCard(c,G.top));if(twos.length&&G.out.some(c=>c.n!=='S'&&runnerBuildValue(p,c)>=140)){const c=[...twos].sort((a,b)=>runnerNeighborScore(p.hand,a)-runnerNeighborScore(p.hand,b))[0];return {type:'single',cards:[c],n:2,top:c,effect:2};}
-  const singles=p.hand.filter(c=>c.n!=='S'&&legalCard(c,G.top));if(!singles.length)return null;
+  const twos=p.hand.filter(c=>c.n===2&&legalCard(c,G.top));if(twos.length&&p.hand.some(c=>isNumbered(c)&&twos.some(t=>c.id!==t.id&&c.c===t.c))){const c=[...twos].sort((a,b)=>runnerNeighborScore(p.hand,a)-runnerNeighborScore(p.hand,b))[0];return {type:'single',cards:[c],n:2,top:c,effect:2};}
+  const singles=p.hand.filter(c=>isNumbered(c)&&legalCard(c,G.top));if(!singles.length)return null;
   singles.sort((a,b)=>{const pa=a.n<=7?runnerNeighborScore(p.hand,a):0,pb=b.n<=7?runnerNeighborScore(p.hand,b):0;return (b.n*20-pb*8)-(a.n*20-pa*8)||b.c-a.c;});const c=singles[0];return {type:'single',cards:[c],n:c.n,top:c,effect:c.n};
 }
 function aggressorNormalPlay(pi){
@@ -2734,12 +2629,11 @@ function aggressorNormalPlay(pi){
   // If a 9 is in Trash, Raccoon beats 6/5 so he can retrieve it.
   if(G.out.some(c=>c.n===9)){const twos=p.hand.filter(c=>c.n===2&&legalCard(c,G.top)).sort((a,b)=>a.c-b.c);if(twos.length){const c=twos[0];return {type:'single',cards:[c],n:2,top:c,effect:2};}}
   for(const n of [6,5]){const opts=p.hand.filter(c=>c.n===n&&legalCard(c,G.top)).sort((a,b)=>a.c-b.c);if(opts.length){const c=opts[0];return {type:'single',cards:[c],n,top:c,effect:n};}}
-  const leg=p.hand.filter(c=>c.n!=='S'&&legalCard(c,G.top)),nums=[...new Set(leg.map(c=>c.n))].filter(n=>![5,6,9].includes(n));
+  const leg=p.hand.filter(c=>isNumbered(c)&&legalCard(c,G.top)),nums=[...new Set(leg.map(c=>c.n))].filter(n=>![5,6,9].includes(n));
   const dups=[];for(const n of nums){const all=p.hand.filter(c=>c.n===n);if(all.length>1)dups.push({n,all,top:all.reduce((a,b)=>a.c>b.c?a:b)});}if(dups.length){dups.sort((a,b)=>b.all.length-a.all.length||a.n-b.n);const d=dups[0];return {type:'duplicates',cards:d.all,n:d.n,top:d.top,effect:d.n};}
-  // Never voluntarily use Pest Control outside an attack.
-  const nonSpider=leg.filter(c=>c.n!=='S');if(!nonSpider.length)return null;
+  const fallbackCards=leg;if(!fallbackCards.length)return null;
   // Fall back to a simple high-card play.
-  nonSpider.sort((a,b)=>b.n-a.n||a.c-b.c);const c=nonSpider[0];return {type:'single',cards:[c],n:c.n,top:c,effect:c.n};
+  fallbackCards.sort((a,b)=>b.n-a.n||a.c-b.c);const c=fallbackCards[0];return {type:'single',cards:[c],n:c.n,top:c,effect:c.n};
 }
 function baseUpdatedGrantChoosePlay(pi,attackMode=false){
   const p=G.players[pi];
@@ -2824,9 +2718,9 @@ function botChooseRunEffect(pi,seq){
     let best=options[0],bestValue=-Infinity;
     for(const n of options){
       let v=trainedExpertCardBias(n,pi);
-      if(n===1&&exposed(pi).length)v+=P.oneFaceup;
-      if(n===4&&hiddenPan(pi).length)v+=P.sevenHidden;
-      if(n===2&&botRetrieveChoice(pi))v+=P.twoUseful;
+      if(n===1&&p.pantry.length)v+=P.oneFaceup;
+      if(n===4&&p.pantry.length&&p.hand.length>1)v+=P.oneFaceup;
+      if(n===2&&p.hand.some(isNumbered))v+=P.twoUseful;
       if(v>bestValue){bestValue=v;best=n;}
     }
     return best;
@@ -2840,9 +2734,9 @@ function botChooseRunEffect(pi,seq){
     let best=options[0],bestValue=-Infinity;
     for(const n of options){
       let v=trainedRunnerCardBias(n);
-      if(n===1&&exposed(pi).length)v+=2;
-      if(n===4&&hiddenPan(pi).length)v+=2;
-      if(n===2&&botRetrieveChoice(pi))v+=2;
+      if(n===1&&p.pantry.length)v+=2;
+      if(n===4&&p.pantry.length&&p.hand.length>1)v+=2;
+      if(n===2&&p.hand.some(isNumbered))v+=2;
       if(v>bestValue){bestValue=v;best=n;}
     }
     return best;
@@ -2923,7 +2817,13 @@ async function performPlay(pi,play){
   let effect;
 
   if(play.type==='run'){
-    effect=play.effect ?? (p.human?await chooseRunPower(play.seq):botChooseRunEffect(pi,play.seq));
+    if(!play.top){
+      play.top=p.human
+        ? await chooseRunCard(play.playableCards)
+        : play.playableCards.find(c=>c.n===botChooseRunEffect(pi,play.playableCards.map(x=>x.n)));
+    }
+    effect=play.top.n;
+    play.effect=effect;
   }else{
     effect=play.n ?? play.cards[0].n;
   }
@@ -2933,18 +2833,20 @@ async function performPlay(pi,play){
 
   await animatePlayedCards(pi,play.cards);
 
-  for(const card of play.cards){
+  const ordered=play.top?[...play.cards.filter(c=>c.id!==play.top.id),play.top]:play.cards;
+  for(const card of ordered){
     const idx=p.hand.findIndex(x=>x.id===card.id);
     if(idx>=0)p.hand.splice(idx,1);
     G.discard.push(card);
   }
 
   if(play.type==='run'){
-    G.top=play.top || play.cards.at(-1);
-    log(`${p.name} plays a ${COLOR_NAMES[play.c]} ${play.seq.join('-')} run and chooses ${effect} (${PESTS[effect].name}).`);
+    G.top=play.top;
+    const wildCount=play.cards.filter(isWild).length;
+    log(`${p.name} plays a ${COLOR_NAMES[play.c]} ${play.seq.join('-')} run${wildCount?` with ${wildCount} Wild${wildCount===1?'':'s'}`:''}; ${cardLabel(play.top)} becomes the top card and activates.`);
   }else{
     G.top=play.top || play.cards.reduce((a,b)=>a.c>b.c?a:b);
-    log(`${p.name} plays ${play.cards.length>1?`${play.cards.length} × `:''}${play.cards[0].n} ${PESTS[play.cards[0].n].name}.`);
+    log(`${p.name} plays ${play.cards.length>1?`${play.cards.length} cards as `:''}${play.n} ${PESTS[play.n].name}${play.cards.some(isWild)?' using Wild':''}.`);
   }
 
   recordDiscardEntry(pi,play.cards,{type:play.type,effect,label:play.type==='run'?`Power: ${effect} ${PESTS[effect].name}`:null});
@@ -2958,26 +2860,43 @@ async function performPlay(pi,play){
   if(runnerWillUpgrade&&maybeUpgradeRunnerAfterRun(p,runnerRunCards.length)){render();await showRunnerUpgradeOverlay(p,runnerRunCards);}
   if([5,6].includes(effect))G.attackOwner=pi;
 
+  if(effect===2)resolveRaccoonPurge(pi,play.top.c);
+
   if(!p.hand.length){
     if(!p.pantry.length){
-      endGame(pi);
-      return;
+      log(`${p.name} has emptied their hand and Pantry.`);
+    }else{
+      await pullPantry(pi);
     }
-    await pullPantry(pi);
   }
 
   if(G.over)return;
   await resolveEffect(pi,effect);
 }
 
-async function chooseRunPower(seq,allowedPowers=null){
-  const available=(allowedPowers || seq.filter(n=>n!==0)).filter(n=>n!==0);
-  const choices=available.map(n=>({
-    label:`${n} — ${PESTS[n].name}: ${PESTS[n].effect}`,
-    value:n,
-    primary:n===5||n===6
+function resolveRaccoonPurge(pi,color){
+  const p=G.players[pi];
+  const purged=p.hand.filter(c=>isNumbered(c)&&c.c===color);
+  if(!purged.length){
+    log(`${p.name}'s Raccoon finds no other ${COLOR_NAMES[color]} cards to trash.`);
+    return;
+  }
+  const ids=new Set(purged.map(c=>c.id));
+  p.hand=p.hand.filter(c=>!ids.has(c.id));
+  G.out.push(...purged);
+  log(`${p.name}'s Raccoon trashes ${purged.length} other ${COLOR_NAMES[color]} card${purged.length===1?'':'s'}: ${purged.map(cardLabel).join(', ')}.`);
+  render();
+}
+
+async function chooseRunCard(playableCards,allowedPowers=null){
+  const available=playableCards.filter(c=>!allowedPowers||allowedPowers.includes(c.n));
+  const choices=available.map(c=>({
+    label:`${cardLabel(c)} — ${PESTS[c.n].effect}`,
+    value:c.id,
+    primary:c.n===5||c.n===6
   }));
-  return modalChoice('Choose the run power','Only one power activates.',choices);
+  const id=await modalChoice('Choose the top card','Choose a real card that was playable by itself. It becomes the top card and activates.',choices);
+  return available.find(c=>c.id===id)||available[0];
 }
 
 async function performAttackPlay(pi,play){
@@ -2986,19 +2905,21 @@ async function performAttackPlay(pi,play){
   const runnerRunCards=runnerWillUpgrade?[...play.cards]:null;
   let effect=play.effect;
   if(play.type==='run'&&p.human){
-    effect=await chooseRunPower(play.seq,play.attackPowers);
+    play.top=await chooseRunCard(play.playableCards,play.attackPowers);
+    effect=play.top.n;
   }
   if(effect===undefined)effect=play.n;
 
   await animatePlayedCards(pi,play.cards);
 
-  for(const card of play.cards){
+  const ordered=play.top?[...play.cards.filter(c=>c.id!==play.top.id),play.top]:play.cards;
+  for(const card of ordered){
     const idx=p.hand.findIndex(x=>x.id===card.id);
     if(idx>=0)p.hand.splice(idx,1);
     G.discard.push(card);
   }
 
-  G.top=play.top || (play.type==='run'?play.cards.at(-1):play.cards.reduce((a,b)=>a.c>b.c?a:b));
+  G.top=play.top || play.cards.filter(isNumbered).reduce((a,b)=>a.c>b.c?a:b);
   G.lastSuccessful=pi;
   G.startingCardActive=false;
   G.lastPlayedBy=p.name;
@@ -3007,19 +2928,21 @@ async function performAttackPlay(pi,play){
   recordDiscardEntry(pi,play.cards,{type:play.type,effect,label:`Attack response: ${effect} ${PESTS[effect].name}`});
 
   if(play.type==='run'){
-    log(`${p.name} defends with a ${COLOR_NAMES[play.c]} ${play.seq.join('-')} run and chooses ${effect} (${PESTS[effect].name}).`);
+    log(`${p.name} defends with a ${COLOR_NAMES[play.c]} ${play.seq.join('-')} run; ${cardLabel(play.top)} becomes the top card and activates.`);
   }else{
-    log(`${p.name} defends with ${play.cards.length>1?`${play.cards.length} × `:''}${play.cards[0].n} ${PESTS[play.cards[0].n].name}.`);
+    log(`${p.name} defends with ${play.cards.length>1?`${play.cards.length} cards as `:''}${effect} ${PESTS[effect].name}${play.cards.some(isWild)?' using Wild':''}.`);
   }
   render();
   if(runnerWillUpgrade&&maybeUpgradeRunnerAfterRun(p,runnerRunCards.length)){render();await showRunnerUpgradeOverlay(p,runnerRunCards);}
 
+  if(effect===2)resolveRaccoonPurge(pi,play.top.c);
+
   if(!p.hand.length){
     if(!p.pantry.length){
-      endGame(pi);
-      return 'won';
+      log(`${p.name} has emptied their hand and Pantry.`);
+    }else{
+      await pullPantry(pi);
     }
-    await pullPantry(pi);
   }
 
   if([5,6].includes(effect))G.attackOwner=pi;
@@ -3057,13 +2980,6 @@ async function handleAttack(pi){
     });
 
     if(action==='forced-end')return 'won';
-    if(action==='spider'){
-      await burnSpider(pi,`uses Pest Control and passes the +${G.attack} attack onward`);
-      G.passes++;
-      if(await resolveCompletedPassCycle(pi))return 'stay';
-      return 'passed';
-    }
-
     if(action==='draw'){
       if(hasNumberedAttackDefense(pi)){
         showToast('You have a legal numbered response, so you must play it.');
@@ -3102,12 +3018,6 @@ async function handleAttack(pi){
       const opts=p.hand.filter(c=>c.n===n&&legalCard(c,G.top)).sort((a,b)=>a.c-b.c);
       if(opts.length){const c=opts[0];return performAttackPlay(pi,{type:'single',cards:[c],n,top:c,effect:n});}
     }
-    // Pest Control only exists to pass an attack onward, and is preferred over blocking with 7.
-    if(canUseSpider(pi)){
-      G.attackOwner=pi;
-      await burnSpider(pi,`uses Pest Control and angrily passes the +${G.attack} attack onward`);G.passes++;
-      if(await resolveCompletedPassCycle(pi))return 'stay';return 'passed';
-    }
     const beetles=p.hand.filter(c=>c.n===7);
     if(beetles.length){const top=beetles.reduce((a,b)=>a.c>b.c?a:b);return performAttackPlay(pi,{type:beetles.length>1?'duplicates':'single',cards:beetles,n:7,top,effect:7});}
     const amount=G.attack,owner=G.attackOwner;log(`${p.name} draws ${amount} and loses the turn.`);await drawCardsAnimated(pi,amount);G.attack=0;G.attackOwner=null;G.passes++;reactToDraw(pi,amount);
@@ -3119,13 +3029,6 @@ async function handleAttack(pi){
 
   if(play){
     return performAttackPlay(pi,play);
-  }
-
-  if(canUseSpider(pi)){
-    await burnSpider(pi,`uses Pest Control and passes the +${G.attack} attack onward`);
-    G.passes++;
-    if(await resolveCompletedPassCycle(pi))return 'stay';
-    return 'passed';
   }
 
   const amount=G.attack,owner=G.attackOwner;
@@ -3140,26 +3043,6 @@ async function handleAttack(pi){
 }
 
 async function confirmEmptyPower(effect){
-  if(effect===1&&G.players[0].pantry.length>0&&exposed(0).length===0){
-    return modalChoice(
-      'Ant has nothing to take',
-      '<p>You have no face-up Pantry Pests, so Ant’s power will do nothing.</p>',
-      [
-        {label:'Choose a different play',value:false},
-        {label:'Play Ant anyway',value:true,primary:true}
-      ]
-    );
-  }
-  if(effect===2&&!G.out.some(c=>c.n!=='S')){
-    return modalChoice(
-      'Trash is empty',
-      '<p>There are no numbered Pests in Trash, so Raccoon’s power will do nothing.</p>',
-      [
-        {label:'Choose a different play',value:false},
-        {label:'Play Raccoon anyway',value:true,primary:true}
-      ]
-    );
-  }
   return true;
 }
 
@@ -3189,20 +3072,16 @@ async function humanTurn(){
     return;
   }
 
-  if(action==='spider'){
-    await burnSpider(0,'uses Pest Control to pass');
-    G.passes++;
-    if(await resolveCompletedPassCycle(G.current))return 'stay';
-    return;
-  }
-
   const val=validateSelection(0,action.indices,false);
   if(!val.ok){
     showToast(val.msg);
     return humanTurn();
   }
 
-  if(val.type==='run')val.effect=await chooseRunPower(val.seq);
+  if(val.type==='run'){
+    val.top=await chooseRunCard(val.playableCards);
+    val.effect=val.top.n;
+  }
   const chosenEffect=val.type==='run'?val.effect:val.n;
   if(!await confirmEmptyPower(chosenEffect)){
     selected.clear();
@@ -3233,17 +3112,9 @@ async function botTurn(pi){
   const play=botChoosePlay(pi,false);
 
   if(!play){
-    if(p.grantBrain&&canUseSpider(pi)){
-      await burnSpider(pi,p.hand.length===1&&p.pantry.length?'uses their last hand Pest Control to pass and move into the Pantry':'uses Pest Control to pass');
-    }else if(canUseSpider(pi)&&!isRageAggressor(p)&&spiderOnlyHandCardWithPantry(pi)){
-      await burnSpider(pi,'uses their last hand Pest Control to pass and move into the Pantry');
-    }else if(canUseSpider(pi)&&!isRageAggressor(p)&&G.top&&G.top.n>=9&&G.passes>=1&&p.strategy==='Expert'){
-      await burnSpider(pi,'uses Pest Control to pass');
-    }else{
-      await drawCardsAnimated(pi,1);
-      reactToDraw(pi,1);
-      log(`${p.name} cannot play, draws 1, and passes.`);
-    }
+    await drawCardsAnimated(pi,1);
+    reactToDraw(pi,1);
+    log(`${p.name} cannot play, draws 1, and passes.`);
     G.passes++;
     if(await resolveCompletedPassCycle(pi))return 'stay';
     return;
@@ -3267,10 +3138,68 @@ async function runLoop(session=gameSessionId){
     const pi=G.current;
     const result=pi===0?await humanTurn():await botTurn(pi);
     if(!G||G.over||session!==gameSessionId)break;
-    if(result!=='stay')G.current=(pi+1)%4;
-    G.turns++;
+    if(result!=='stay'){
+      G.current=(pi+1)%4;
+      G.turns++;
+      if(G.finalTurnsRemaining!==null){
+        if(G.finalLapJustStarted)G.finalLapJustStarted=false;
+        else G.finalTurnsRemaining--;
+        if(G.finalTurnsRemaining<=0){
+          finishRound();
+          break;
+        }
+      }
+    }
     render();
   }
+}
+
+function roundScore(player){return player.pantry.length-(player.hand.length===0?1:0);}
+
+function resetForNextRound(){
+  const nextRound=G.round+1;
+  const players=G.players;
+  gameSessionId++;
+  const firstPlayer=rand(players.length);
+  for(const player of players){
+    player.hand=[];player.pantry=[];player.knownSingle=null;player.botReaction=null;
+  }
+  Object.assign(G,{deck:buildDeck(),discard:[],out:[],top:null,current:firstPlayer,startingPlayer:firstPlayer,startingCardActive:true,attack:0,attackOwner:null,passes:0,lastSuccessful:null,lastPlayedBy:'Starting card',discardHistory:[],over:false,turns:0,round:nextRound,finalLapTrigger:null,finalTurnsRemaining:null,finalLapJustStarted:false});
+  for(const player of players){
+    player.pantry=G.deck.splice(-4).map((card,slot)=>({card,up:false,slot}));
+    player.hand=G.deck.splice(-8);
+  }
+  selected.clear();
+  els.log.innerHTML='';
+  placeStartingCard();
+  log(`Round ${G.round} of ${G.maxRounds}. ${G.players[G.current].name} goes first.`);
+  setEndGameLock(false);
+  render();
+  runLoop(gameSessionId);
+}
+
+function finishRound(){
+  if(!G||G.over)return;
+  G.over=true;
+  setEndGameLock(true);
+  clearHumanIdleReactionTimer();
+  const scores=G.players.map(roundScore);
+  scores.forEach((score,pi)=>{G.players[pi].totalScore+=score;});
+  render();
+  const rows=G.players.map((p,pi)=>`<tr><th>${p.name}</th><td>${p.pantry.length}</td><td>${p.hand.length===0?'-1':'—'}</td><td><strong>${scores[pi]}</strong></td><td>${p.totalScore}</td></tr>`).join('');
+  const table=`<table><thead><tr><th>Player</th><th>Pantry</th><th>Empty hand</th><th>Round</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>`;
+  if(G.round<G.maxRounds){
+    log(`Round ${G.round} complete.`);
+    modalChoice(`Round ${G.round} complete`,`${table}<p class="meta">Lowest total score wins after five rounds.</p>`,[{label:`Start Round ${G.round+1}`,value:true,primary:true}],false,'end-game-modal').then(()=>resetForNextRound());
+    return;
+  }
+  const best=Math.min(...G.players.map(p=>p.totalScore));
+  const winners=G.players.map((p,pi)=>({p,pi})).filter(x=>x.p.totalScore===best);
+  winners.forEach(x=>reactGameEnd(x.pi));
+  const title=winners.length>1?'MATCH TIED':`${winners[0].p.name} WINS`;
+  const result=winners.length>1?`${winners.map(x=>x.p.name).join(' and ')} tie with ${best} points.`:`${winners[0].p.name} wins with ${best} points.`;
+  log(result);
+  setTimeout(()=>modalChoice(title,`${table}<div class="victory-congrats">${result}</div><p class="end-game-message">Lowest score wins.</p>`,[{label:'Home',value:'home',primary:true}],false,'end-game-modal').then(()=>showHomeScreen()),700);
 }
 
 function endGame(pi){
@@ -3342,16 +3271,10 @@ els.play.onclick=()=>{
   if(!humanResolver)return;
   clearHumanIdleReactionTimer();
   const indices=[...selected];
-  const cards=indices.map(i=>G?.players?.[0]?.hand?.[i]).filter(Boolean);
-  if(cards.length===1&&cards[0].n==='S'){
-    humanResolver.resolve('spider');
-  }else{
-    humanResolver.resolve({indices});
-  }
+  humanResolver.resolve({indices});
   humanResolver=null;
 };
 els.draw.onclick=()=>{if(!humanResolver)return;clearHumanIdleReactionTimer();humanResolver.resolve('draw');humanResolver=null;};
-els.spiderPass.onclick=()=>{if(!humanResolver)return;clearHumanIdleReactionTimer();humanResolver.resolve('spider');humanResolver=null;};
 function animateHandResort(nextMode){
   if(handSortMode===nextMode)return;
   const before=new Map();
@@ -3443,7 +3366,6 @@ async function showUtilityInfo(title,message){
 }
 
 if(els.fastBotsInfo)els.fastBotsInfo.onclick=()=>showUtilityInfo('Skip Bot Wait Time','Removes the normal 3–5 second pause before bot moves so the game plays faster. It does not change which moves the bots choose.');
-if(els.hideSpiderInfo)els.hideSpiderInfo.onclick=()=>showUtilityInfo('Hide Pest Control Popups','Automatically chooses not to use Pest Control whenever an optional Pest Control popup would normally appear. You can still manually play Pest Control to pass when it is available.');
 
 els.start.onclick=requestNewGame;
 if(els.showHandsToggle)els.showHandsToggle.onchange=render;
@@ -3471,9 +3393,9 @@ els.rules.onclick=showRules;
 
 function sortOutCards(cards){
   return [...cards].sort((a,b)=>{
-    if(a.n==='S'&&b.n!=='S')return 1;
-    if(b.n==='S'&&a.n!=='S')return -1;
-    if(a.n==='S'&&b.n==='S')return 0;
+    if(isWild(a)&&!isWild(b))return 1;
+    if(isWild(b)&&!isWild(a))return -1;
+    if(isWild(a)&&isWild(b))return 0;
     if(a.c!==b.c)return a.c-b.c;
     if(a.n!==b.n)return a.n-b.n;
     return 0;
@@ -3485,12 +3407,12 @@ function showOut(){
   const cards=G?sortOutCards(G.out):[];
   els.modalBody.innerHTML=`
     <h2>Trash Cards (${cards.length})</h2>
-    <p class="meta">Organized by color, then number. Raccoon (#2) may retrieve a numbered Pest from here. Pest Control cannot be retrieved.</p>
+    <p class="meta">Organized by color, then number. Raccoon (#2) sends matching-color hand cards here.</p>
     <div id="outGroups" class="out-groups"></div>`;
 
   const groups=document.getElementById('outGroups');
-  for(let color=0;color<4;color++){
-    const colorCards=cards.filter(c=>c.n!=='S'&&c.c===color);
+  for(let color=0;color<COLORS.length;color++){
+    const colorCards=cards.filter(c=>isNumbered(c)&&c.c===color);
     if(!colorCards.length)continue;
     const section=document.createElement('section');
     section.className='out-group';
@@ -3500,13 +3422,13 @@ function showOut(){
     groups.appendChild(section);
   }
 
-  const spiders=cards.filter(c=>c.n==='S');
-  if(spiders.length){
+  const wilds=cards.filter(isWild);
+  if(wilds.length){
     const section=document.createElement('section');
     section.className='out-group';
-    section.innerHTML='<h3>Pest Control</h3><div class="out-card-grid"></div>';
+    section.innerHTML='<h3>Wild</h3><div class="out-card-grid"></div>';
     const grid=section.querySelector('.out-card-grid');
-    spiders.forEach(c=>grid.appendChild(cardEl(c)));
+    wilds.forEach(c=>grid.appendChild(cardEl(c)));
     groups.appendChild(section);
   }
 
@@ -3547,16 +3469,18 @@ function showDiscardHistory(){
 
 function showRules(){
   resetModalPresentation();
-  els.modalBody.innerHTML=`<div class="rules"><h2>Pests in the Pantry — Quick Rules</h2><p><a href="https://pestsinthepantry.com/game-rules" target="_blank" rel="noopener">Read the complete rules ↗</a></p>
-  <p><strong>Goal:</strong> be first to empty your hand and all 4 Pantry Pests.</p>
-  <h3>Play</h3><p>You must play a numbered Pest if you can. Play a higher number, or the same number in a stronger color. Rat/0 may be played on any non-0; on another 0 it still needs a stronger color. If you cannot make a numbered play, draw 1 and end your turn. The drawn card cannot be played immediately. Pest Control is always optional.</p>
-  <h3>Color Hierarchy</h3><div class="color-hierarchy"><span class="hierarchy-color green-chip">Green</span><b>&lt;</b><span class="hierarchy-color red-chip">Red</span><b>&lt;</b><span class="hierarchy-color blue-chip">Blue</span><b>&lt;</b><span class="hierarchy-color gold-chip">Gold</span></div><p class="meta">Green is weakest and Gold is strongest. When two cards have the same number, only a stronger color can be played on top.</p>
-  <p><strong>Duplicates:</strong> play multiple copies of the same number together; only one power activates. <strong>Runs:</strong> play 3+ consecutive cards of one color; the highest card normally makes the run legal and ends on top. Choose one power from the run. A run beginning with Rat/0 inherits Rat's universal playability.</p>
+  els.modalBody.innerHTML=`<div class="rules"><h2>Pests in the Pantry — Quick Rules</h2>
+  <p><strong>Goal:</strong> finish five rounds with the lowest total score.</p>
+  <h3>Play</h3><p>You must play a numbered Pest if you can. Play a higher number, or the same number in a stronger color. Rat/0 may be played on any non-0; on another 0 it still needs a stronger color. If you cannot play, draw 1 and end your turn. The drawn card cannot be played immediately.</p>
+  <h3>Color Hierarchy</h3><div class="color-hierarchy"><span class="hierarchy-color bronze-chip">Bronze</span><b>&lt;</b><span class="hierarchy-color silver-chip">Silver</span><b>&lt;</b><span class="hierarchy-color gold-chip">Gold</span></div><p class="meta">Bronze is weakest and Gold is strongest. When two cards have the same number, only a stronger color can be played on top.</p>
+  <p><strong>Duplicates:</strong> play multiple copies of the same number together; Wilds may stand in for extra copies. <strong>Runs:</strong> play 3+ consecutive values of one color. Wilds may fill missing values, including multiple Wilds, as long as at least one real card is included. Choose one <em>real card in the run that would have been playable by itself</em>; that card becomes the top card and its power activates. Wilds never activate a power and can never be played alone.</p>
   <h3>Powers</h3><table>${Object.keys(PESTS).map(k=>`<tr><th>${k} <span style="opacity:.65;font-weight:600">×${PESTS[k].copies}</span></th><td>${PESTS[k].name}</td><td>${PESTS[k].effect}</td></tr>`).join('')}</table>
-  <h3>Pantry</h3><p>If a play empties your hand while Pantry cards remain, take one Pantry Pest <em>before</em> resolving the played power. When your hand empties, you may choose a face-up Pantry Pest or take any face-down Pantry Pest blindly.</p>
-  <h3>Attacks</h3><p>5 adds +2 and 6 adds +1. Legal 5/6 responses stack the attack. Beetle/7 blocks the entire attack and may always be played while under attack. Runs may also defend: choose 5 or 6 to continue the attack, or 7 to block it. A defensive run containing Beetle/7 may be played regardless of the current top card.</p>
-  <h3>Trash / Reset</h3><p>After every other player passes on a successful play, the pile goes to Trash and the last player to play gets an open restart. If all four players pass on the original starting card, everyone has drawn once; that starting card goes to Trash and a new starting card is dealt for the same starting player. Moth/3 clears immediately and lets its player play again. When the draw deck empties, Trash cards are shuffled into a new draw deck.</p>
-  <h3>Pest Control</h3><p>Pest Control can opt you out of a power or be used simply to pass. It is burned into the current pile without becoming the top card, and it cannot be your final winning card. During Termite, a player who uses Pest Control is removed from that exchange, so cards route around them.</p></div>`;
+  <p><strong>Raccoon/2:</strong> after playing it, trash every other real card in your hand matching the played Raccoon's color. Wilds are not colored and stay in hand.</p>
+  <h3>Pantry</h3><p>Raccoon's matching-color purge happens first. Then, if the play emptied your hand while Pantry cards remain, take one Pantry Pest <em>before</em> resolving other powers. You may choose a face-up Pantry Pest or take any face-down Pantry Pest blindly.</p>
+  <h3>Final Lap & Scoring</h3><p>When the first player takes their final Pantry Pest into their hand, the final lap begins. Every player—including that player—gets exactly one more turn, with the triggering player acting last. Score 1 point for every Pantry Pest still in front of you, then subtract 1 point if your hand is empty. Other hand cards score nothing. Exact ties remain ties. After five rounds, the lowest total score wins.</p>
+  <h3>Attacks</h3><p>5 adds +2 and 6 adds +1. Legal 5/6 responses stack the attack. Beetle/7 blocks the entire attack and may always be played while under attack. Runs may also defend when their chosen real top card is a playable 5 or 6, or a 7 that blocks.</p>
+  <h3>Trash / Reset</h3><p>After every other player passes on a successful play, the pile goes to Trash and the last player to play gets an open restart. If all four players pass on the original starting card, everyone has drawn once; that starting card goes to Trash and a new starting card is dealt for the same starting player. Moth/3 lets its player play again, but the pile stays in place and the next play must be made on that 3. When the draw deck empties, Trash cards are shuffled into a new draw deck.</p>
+  </div>`;
   els.modal.classList.remove('hidden');
   els.modalClose.style.display='block';
   modalResolver=()=>{};

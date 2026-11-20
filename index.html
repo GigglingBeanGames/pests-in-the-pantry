@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Pests in the Pantry</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=29.3" />
   <link rel="icon" href="assets/cockroach-logo.png" type="image/png" />
 </head>
 <body class="home-mode">
@@ -39,7 +39,7 @@
             <button id="introStartBtn" class="primary intro-start">START</button>
             <button id="introRulesBtn" class="intro-rules">QUICK RULES</button>
             <a class="intro-rules complete-rules-link" href="https://pestsinthepantry.com/game-rules">COMPLETE RULES</a>
-<button class="buy-now" onclick="window.open('https://gigglingbeangames.myshopify.com/', '_blank')">BUY NOW</button>
+            <button class="buy-now" onclick="window.open('https://gigglingbeangames.myshopify.com/', '_blank')">BUY NOW</button>
           </div>
         </div>
         <div id="setupPanel" class="panel setup-panel setup-panel-hidden">
@@ -47,14 +47,10 @@
         <p>You vs. three bots. Choose how each opponent plays.</p>
         <div class="bot-grid">
           <div class="bot-config">
-            <img id="bot1PreviewImg" class="bot-preview-img" src="assets/profile-runner.png" alt="" />
+            <img id="bot1PreviewImg" class="bot-preview-img" src="assets/profile-basic.png" alt="" />
             <label>Opponent 1
               <select id="bot1">
-                <option>Basic</option>
-                <option selected>Runner</option>
-                <option>Aggressor</option>
-                <option>Random</option>
-                <option>Goofball</option>
+                <option selected>Basic</option>
                 <option>Expert</option>
                 <option>Grandmaster</option>
               </select>
@@ -66,10 +62,6 @@
             <label>Opponent 2
               <select id="bot2">
                 <option>Basic</option>
-                <option>Runner</option>
-                <option>Aggressor</option>
-                <option>Random</option>
-                <option>Goofball</option>
                 <option selected>Expert</option>
                 <option>Grandmaster</option>
               </select>
@@ -81,10 +73,6 @@
             <label>Opponent 3
               <select id="bot3">
                 <option selected>Basic</option>
-                <option>Runner</option>
-                <option>Aggressor</option>
-                <option>Random</option>
-                <option>Goofball</option>
                 <option>Expert</option>
                 <option>Grandmaster</option>
               </select>
@@ -125,7 +113,6 @@
             <div id="actionBar" class="action-bar">
               <button id="playBtn" class="primary">Play Selected</button>
               <button id="drawBtn">Draw 1 & Pass</button>
-              <button id="spiderPassBtn">Use Pest Control to Pass</button>
             </div>
             <div class="play-utility-rail" aria-label="Game controls">
               <div class="utility-option-row">
@@ -133,10 +120,6 @@
                 <button id="fastBotsInfoBtn" class="utility-info-button" type="button" aria-label="About Skip Bot Wait Time" title="About Skip Bot Wait Time">i</button>
               </div>
               <label id="showHandsWrap" class="fast-bots hidden public-cheat-control"><input id="showHandsToggle" type="checkbox" /> Show All Hands</label>
-              <div class="utility-option-row">
-                <label id="hideSpiderWrap" class="fast-bots hidden"><input id="hideSpiderToggle" type="checkbox" /> Hide Pest Control Popups</label>
-                <button id="hideSpiderInfoBtn" class="utility-info-button" type="button" aria-label="About Hide Pest Control Popups" title="About Hide Pest Control Popups">i</button>
-              </div>
               <button id="selectWinnerBtn" class="utility-test-button hidden public-cheat-control" type="button">Select Winner</button>
             </div>
           </div>
@@ -178,7 +161,7 @@
     </div>
   </div>
 
-  <script src="game.js"></script>
+  <script src="game.js?v=29.3"></script>
 
 
 </body>
