@@ -627,6 +627,7 @@ async function animateCardTravel(card,fromEl,toEl,{faceDown=false,hold=0,delay=0
 }
 
 async function animatePlayedCards(pi,cards){
+  window.PITPAudio?.sfx('play');
   const target=els.current;
   const source=pi===0?null:cardSourceElement(pi,cards[0]);
   const jobs=cards.map((card,i)=>animateCardTravel(
@@ -672,6 +673,7 @@ function trainedExpertDrawOne(pi){
 }
 
 async function drawCardsAnimated(pi,count=1){
+  window.PITPAudio?.sfx('draw');
   const p=G.players[pi];
   const drawn=[];
 
@@ -708,6 +710,7 @@ async function drawCardsAnimated(pi,count=1){
   await Promise.all(jobs);
 }
 async function animatePileToOut(pause=500){
+  window.PITPAudio?.sfx('trash');
   if(!G.top||!els.current||!els.outPile)return;
   await sleep(pause);
 
@@ -872,6 +875,7 @@ function showHomeScreen(){
 }
 
 function newGame(){
+  window.PITPAudio?.startMusic();
   hideVictoryCelebration();
   setEndGameLock(false);
   resetModalPresentation();
@@ -1517,6 +1521,7 @@ function buildVictoryCelebration(){
 }
 
 function showVictoryCelebration(){
+  window.PITPAudio?.sfx('win');
   const v=buildVictoryCelebration();
   requestAnimationFrame(()=>v.classList.add('show'));
   if(victoryHomeTimer)clearTimeout(victoryHomeTimer);
@@ -1668,6 +1673,7 @@ async function choosePantryPositionModal(pi,title='Choose a Pantry Pest',mode='t
 }
 
 async function pullPantry(pi){
+  window.PITPAudio?.sfx('pantry');
   const p=G.players[pi];
   if(!p.pantry.length)return null;
   const ups=exposed(pi);
@@ -1705,6 +1711,7 @@ function botChoosePantry(pi,ups){
 }
 
 async function resolveEffect(pi,n){
+  window.PITPAudio?.sfx('power');
   const p=G.players[pi];
 
   if(n===1){
@@ -3195,6 +3202,7 @@ function finishRound(){
   }
   const best=Math.min(...G.players.map(p=>p.totalScore));
   const winners=G.players.map((p,pi)=>({p,pi})).filter(x=>x.p.totalScore===best);
+  window.PITPAudio?.sfx(winners.some(x=>x.pi===0)?'win':'lose');
   winners.forEach(x=>reactGameEnd(x.pi));
   const title=winners.length>1?'MATCH TIED':`${winners[0].p.name} WINS`;
   const result=winners.length>1?`${winners.map(x=>x.p.name).join(' and ')} tie with ${best} points.`:`${winners[0].p.name} wins with ${best} points.`;
@@ -3218,6 +3226,8 @@ function endGame(pi){
     showVictoryCelebration();
     return;
   }
+
+  window.PITPAudio?.sfx('lose');
 
   setTimeout(()=>{
     if(!G||!G.over)return;
