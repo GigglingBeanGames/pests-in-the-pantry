@@ -1,14 +1,14 @@
-// Pests in the Pantry v29.0 — five-round scoring, final lap, refined bots
+// Pests in the Pantry v30.0 — mobile layout, empty-both finish, refined scoring
 'use strict';
 
 const COLORS=['bronze','silver','gold'];
 const COLOR_NAMES=['Bronze','Silver','Gold'];
 const PESTS={
   0:{name:'Rat',icon:'🐀',art:'assets/pests/rat.png',copies:9,effect:'Play on anything. Reset to 0.'},
-  1:{name:'Ant',icon:'🐜',art:'assets/pests/ant.png',copies:6,effect:'Take 1 face-up or face-down Pantry Pest.'},
+  1:{name:'Ant',icon:'🐜',art:'assets/pests/ant.png',copies:3,effect:'Take 1 face-up or face-down Pantry Pest.'},
   2:{name:'Raccoon',icon:'🦝',art:'assets/pests/raccoon.png',copies:6,effect:'Trash every other hand card matching this Raccoon’s color.'},
   3:{name:'Moth',icon:'🦋',art:'assets/pests/moth.png',copies:12,effect:'Play again on this 3.'},
-  4:{name:'Fly',icon:'🪰',art:'assets/pests/fly.png',copies:12,effect:'Swap 1 hand card with a Pantry Pest; the replacement stays face-down.'},
+  4:{name:'Fly',icon:'🪰',art:'assets/pests/fly.png',copies:12,effect:'Every player discards 1 hand card to the Trash.'},
   5:{name:'Hornet',icon:'🐝',art:'assets/pests/hornet.png',copies:9,effect:'Attack +2; next player loses turn.'},
   6:{name:'Mosquito',icon:'🦟',art:'assets/pests/mosquito.png',copies:12,effect:'Attack +1; next player loses turn.'},
   7:{name:'Beetle',icon:'🪲',art:'assets/pests/beetle.png',copies:12,effect:'Blocks the entire attack.'},
@@ -458,7 +458,7 @@ let reactionSequence=0;
 const newHumanCardIds=new Set();
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const botThinkDelay=()=>els.fastBotsToggle?.checked?0:3000+Math.random()*2000;
+const botThinkDelay=()=>els.fastBotsToggle?.checked?0:800+Math.random()*700;
 async function waitWhileHome(session=gameSessionId){
   while(homePaused&&G&&!G.over&&session===gameSessionId)await sleep(100);
 }
@@ -650,7 +650,7 @@ function trainedExpertDrawValue(pi,card){
   else if(gain>=1.2)v+=P.drawRunPotential;
   if(legalCard(card,G.top))v+=P.drawPlayable;
   if(card.n===1&&G.players[pi].pantry.length)v+=P.oneFaceup;
-  if(card.n===4&&p.pantry.length&&p.hand.length>1)v+=P.oneFaceup;
+  if(card.n===4&&p.hand.length>1)v+=4;
   if(card.n===2&&p.hand.some(x=>isNumbered(x)&&x.c===card.c))v+=P.twoUseful;
   if(card.n===3&&p.hand.some(x=>isNumbered(x)&&x.n<3))v+=P.fiveLow;
   return v;
@@ -890,7 +890,7 @@ function newGame(){
     usedNames.add(name);
     players.push(makePlayer(name,strategies[i]));
   }
-  G={players,deck:buildDeck(),discard:[],out:[],top:null,current:firstPlayer,startingPlayer:firstPlayer,startingCardActive:true,attack:0,attackOwner:null,passes:0,lastSuccessful:null,lastPlayedBy:'Starting card',discardHistory:[],over:false,turns:0,round:1,maxRounds:5,finalLapTrigger:null,finalTurnsRemaining:null,finalLapJustStarted:false};
+  G={players,deck:buildDeck(),discard:[],out:[],top:null,current:firstPlayer,startingPlayer:firstPlayer,startingCardActive:true,attack:0,attackOwner:null,passes:0,lastSuccessful:null,lastPlayedBy:'Starting card',discardHistory:[],over:false,turns:0,round:1,maxRounds:5,roundWinners:[]};
   for(const player of G.players){
     player.pantry=G.deck.splice(-4).map((card,slot)=>({card,up:false,slot}));
     player.hand=G.deck.splice(-8);
@@ -1267,9 +1267,9 @@ function render() {
       ? ''
       : G.current === 0
         ? hasNormalPlay
-          ? `${G.finalTurnsRemaining!==null?'Final lap · ':''}You must make a legal play.`
+          ? 'You must make a legal play.'
           : 'No legal play — draw 1 and pass.'
-        : `${G.finalTurnsRemaining!==null?'Final lap · ':''}${G.players[G.current].name} is thinking…`;
+        : `${G.players[G.current].name} is thinking…`;
   }
 }
 
@@ -1691,20 +1691,11 @@ async function pullPantry(pi){
   }
   const item=p.pantry.splice(idx,1)[0];
   p.hand.push(item.card);
-  maybeStartFinalLap(pi);
   if(p.pantry.length===0)reactPantryCleared(pi);
   p.knownSingle=item.up?item.card:null;
   log(`${p.name} takes ${item.up?cardLabel(item.card):'a face-down Pest'} from the Pantry.`);
   render();
   return item.card;
-}
-function maybeStartFinalLap(pi){
-  if(!G||G.finalLapTrigger!==null||G.players[pi].pantry.length)return;
-  G.finalLapTrigger=pi;
-  G.finalTurnsRemaining=G.players.length;
-  G.finalLapJustStarted=true;
-  log(`${G.players[pi].name} takes their final Pantry Pest! Everyone, including ${G.players[pi].name}, gets one final turn.`);
-  showToast('FINAL LAP! Everyone gets one more turn.');
 }
 function botChoosePantry(pi,ups){
  const p=G.players[pi];return ups.sort((a,b)=>botCardUtility(pi,p.pantry[b].card)-botCardUtility(pi,p.pantry[a].card))[0];
@@ -1720,7 +1711,6 @@ async function resolveEffect(pi,n){
       const idx=await choosePantryPositionModal(pi,'Ant: choose any Pantry Pest','ant');
       const item=p.pantry.splice(idx,1)[0];
       p.hand.push(item.card);
-      maybeStartFinalLap(pi);
       if(p.pantry.length===0)reactPantryCleared(pi);
       log(`You take ${item.up?cardLabel(item.card):'a face-down Pest'} from your Pantry.`);
     }else{
@@ -1730,7 +1720,6 @@ async function resolveEffect(pi,n){
       const idx=downs.length?downs[rand(downs.length)]:botChoosePantry(pi,ups);
       const item=p.pantry.splice(idx,1)[0];
       p.hand.push(item.card);
-      maybeStartFinalLap(pi);
       if(p.pantry.length===0)reactPantryCleared(pi);
       log(`${p.name} uses Ant to take ${item.up?cardLabel(item.card):'a face-down Pest'}.`);
     }
@@ -1741,7 +1730,7 @@ async function resolveEffect(pi,n){
   if(n===3){
     log(`${p.name} uses Moth and plays again on the 3.`);
   }
-  if(n===4)await resolvePantrySwap(pi);
+  if(n===4)await resolveFlyDiscard(pi);
   if(n===5){
     G.attackOwner=pi;
     G.attack+=2;
@@ -1762,32 +1751,53 @@ async function resolveEffect(pi,n){
   render();
 }
 
-async function resolvePantrySwap(pi){
-  const p=G.players[pi];
-  if(!p.pantry.length){
-    log(`${p.name} has no Pantry Pest to swap with Fly.`);
+async function resolveFlyDiscard(sourcePi){
+  const discards=[];
+
+  // Everyone chooses before any cards move, so no player can use information
+  // revealed by another discard. Bots use their established least-favorite-card
+  // logic and protect Wilds/completed runs whenever possible.
+  for(let q=0;q<G.players.length;q++){
+    const player=G.players[q];
+    if(!player.hand.length)continue;
+    let idx=player.human
+      ? await chooseCardModal('Fly: choose 1 card to discard to the Trash',player.hand)
+      : botDiscardChoice(q);
+    if(idx<0||idx>=player.hand.length)idx=0;
+    discards.push({pi:q,card:player.hand[idx]});
+  }
+
+  if(!discards.length){
+    log('Fly resolves, but no one has a hand card to discard.');
     return;
   }
-  if(!p.hand.length){
-    log(`${p.name} has no hand card to place into the Pantry.`);
-    return;
+
+  window.PITPAudio?.sfx('trash');
+  await Promise.all(discards.map(({pi,card},i)=>animateCardTravel(
+    card,
+    cardSourceElement(pi,card),
+    els.outPile,
+    {faceDown:false,delay:i*80,duration:440}
+  )));
+
+  for(const {pi,card} of discards){
+    const player=G.players[pi];
+    const idx=player.hand.findIndex(c=>c.id===card.id);
+    if(idx>=0)player.hand.splice(idx,1);
+    player.knownSingle=player.hand.length===1?player.hand[0]:null;
+    G.out.push(card);
   }
-  const handIdx=p.human
-    ? await chooseCardModal('Fly: choose a hand card to place face-down in your Pantry',p.hand)
-    : botSwapHandChoice(pi);
-  if(handIdx<0||handIdx>=p.hand.length)return;
-  const pantryIdx=p.human
-    ? await choosePantryPositionModal(pi,'Fly: choose a Pantry slot to swap','swap')
-    : rand(p.pantry.length);
-  const outgoing=p.hand.splice(handIdx,1)[0];
-  const incoming=p.pantry[pantryIdx].card;
-  const wasUp=p.pantry[pantryIdx].up;
-  p.pantry[pantryIdx]={...p.pantry[pantryIdx],card:outgoing,up:false};
-  p.hand.push(incoming);
-  p.knownSingle=p.hand.length===1?incoming:null;
-  const takenLabel=p.human||wasUp?cardLabel(incoming):'a face-down Pest';
-  log(`${p.name} uses Fly to put ${cardLabel(outgoing)} face-down in the Pantry and take ${takenLabel}.`);
+
+  log(`${G.players[sourcePi].name}'s Fly makes everyone discard 1: ${discards.map(({pi,card})=>`${G.players[pi].name} — ${cardLabel(card)}`).join('; ')}.`);
   render();
+
+  // A discard can empty a hand. Players who still have Pantry Pests continue
+  // by taking one; anyone with both areas empty wins the round immediately.
+  for(let q=0;q<G.players.length;q++){
+    if(!G.players[q].hand.length&&G.players[q].pantry.length)await pullPantry(q);
+  }
+  const winners=playersWithEmptyHandAndPantry();
+  if(winners.length)finishRound(winners);
 }
 
 
@@ -1937,7 +1947,8 @@ function baseBotPassChoice(pi){
   // Expert leader-denial rule: if the recipient has one hand card, saddle
   // them with 1-4 whenever possible; otherwise 6-7. Rat/0 and Hornet/5 stay protected.
   if(p.strategy==='Expert'&&leftOne){
-    let pool=eligible.filter(x=>x.c.n>=1&&x.c.n<=4);
+    const protectAnts=['Expert','Grandmaster'].includes(p.baseStrategy)&&p.hand.length>3;
+    let pool=eligible.filter(x=>x.c.n>=(protectAnts?2:1)&&x.c.n<=4);
     if(!pool.length)pool=eligible.filter(x=>x.c.n>=6&&x.c.n<=7);
     if(pool.length){
       pool.sort((a,b)=>{
@@ -1967,9 +1978,11 @@ function baseBotPassChoice(pi){
       if(counts[c.n]>1)s-=EP.passDupProtect;
       s-=EP.passLow*c.n;
       if(legalCard(c,G.top))s-=EP.passPlayableProtect;
-      // v17 refinement: Grandmaster protects 1s slightly more.
-      // In mirror testing this moved 1s from ~9.8% to ~7.5% of passes.
-      if(p.baseStrategy==='Grandmaster'&&c.n===1)s-=21;
+      // Expert and Grandmaster protect the now-rare Ants unless their hand is
+      // genuinely low. This applies to Termite passes and Fly discards.
+      if(c.n===1&&['Expert','Grandmaster'].includes(p.baseStrategy)&&p.hand.length>3){
+        s-=p.baseStrategy==='Grandmaster'?110:90;
+      }
       // v18 refinement: Grandmaster also protects 0s moderately. Mirror testing
       // put the strongest natural pass rate at about 6% of passes.
       if(p.baseStrategy==='Grandmaster'&&c.n===0)s-=31;
@@ -2168,8 +2181,9 @@ function botCardUtility(pi,c){
   }
   if(c.n===2)v+=p.hand.filter(x=>isNumbered(x)&&x.c===c.c).length*4;
   if(c.n===4){
-    if(p.pantry.length&&p.hand.length)v+=5;
-    else v-=5;
+    const closeOpponent=G.players.some((x,i)=>i!==pi&&!x.pantry.length&&x.hand.length<=2);
+    if(p.hand.length>1)v+=6;
+    if(closeOpponent)v-=7;
   }
   if(c.n===8&&threat<=2)v+=6;
   if(c.n===9&&threat<=2)v+=5;
@@ -2198,7 +2212,7 @@ function botSwapTrashChoice(pi,cards=G.out.filter(isNumbered)){
   })[0];
 }
 
-function botSwapHandChoice(pi){
+function botDiscardChoice(pi){
   const p=G.players[pi];
   if(!p.hand.length)return -1;
 
@@ -2359,7 +2373,7 @@ function botNormalScore(pi,c,count){
     const P=expertPolicyFor(pi);
     let v=trainedExpertCardBias(n,pi)+count*P.dupBonus;
     if(n===1&&p.pantry.length)v+=P.oneFaceup;
-    if(n===4&&p.pantry.length&&p.hand.length>1)v+=P.oneFaceup;
+    if(n===4&&p.hand.length>1)v+=4;
     if(n===2&&p.hand.some(x=>isNumbered(x)&&x.c===c.c&&x.id!==c.id))v+=P.twoUseful;
     if(n===3&&p.hand.some(x=>isNumbered(x)&&x.n<3))v+=P.fiveLow;
     if(n===7)v-=P.sixDefense;
@@ -2394,7 +2408,7 @@ function botNormalScore(pi,c,count){
     if(n===2&&botRetrieveChoice(pi))s+=5;
     if(count>1)s+=4*(count-1);
   }else if(p.strategy==='Goofball'){
-    if(n===4)s-=80;
+    if(n===4)s-=2;
     if(n===3)s+=10;
     if(n===0)s+=8;
     if(n===1&&exposed(pi).length)s+=8;
@@ -2726,7 +2740,7 @@ function botChooseRunEffect(pi,seq){
     for(const n of options){
       let v=trainedExpertCardBias(n,pi);
       if(n===1&&p.pantry.length)v+=P.oneFaceup;
-      if(n===4&&p.pantry.length&&p.hand.length>1)v+=P.oneFaceup;
+      if(n===4&&p.hand.length>1)v+=4;
       if(n===2&&p.hand.some(isNumbered))v+=P.twoUseful;
       if(v>bestValue){bestValue=v;best=n;}
     }
@@ -2742,7 +2756,7 @@ function botChooseRunEffect(pi,seq){
     for(const n of options){
       let v=trainedRunnerCardBias(n);
       if(n===1&&p.pantry.length)v+=2;
-      if(n===4&&p.pantry.length&&p.hand.length>1)v+=2;
+      if(n===4&&p.hand.length>1)v+=2;
       if(n===2&&p.hand.some(isNumbered))v+=2;
       if(v>bestValue){bestValue=v;best=n;}
     }
@@ -2819,6 +2833,14 @@ async function addAggressorRage(p,amount){
   if(after>=8&&!p.advancedAggressor){p.advancedAggressor=true;makeGrantBrain(p,10);log(`${p.name} is FULLY ENRAGED and becomes an advanced Aggressor!`);render();}
 }
 
+function playersWithEmptyHandAndPantry(){
+  if(!G)return [];
+  return G.players
+    .map((player,pi)=>({player,pi}))
+    .filter(({player})=>player.hand.length===0&&player.pantry.length===0)
+    .map(({pi})=>pi);
+}
+
 async function performPlay(pi,play){
   const p=G.players[pi];
   let effect;
@@ -2867,18 +2889,25 @@ async function performPlay(pi,play){
   if(runnerWillUpgrade&&maybeUpgradeRunnerAfterRun(p,runnerRunCards.length)){render();await showRunnerUpgradeOverlay(p,runnerRunCards);}
   if([5,6].includes(effect))G.attackOwner=pi;
 
+  // A player who empties both areas with the cards just played wins before
+  // that final card's power activates.
+  if(!p.hand.length&&!p.pantry.length){
+    finishRound([pi]);
+    return;
+  }
+
   if(effect===2)resolveRaccoonPurge(pi,play.top.c);
 
   if(!p.hand.length){
-    if(!p.pantry.length){
-      log(`${p.name} has emptied their hand and Pantry.`);
-    }else{
-      await pullPantry(pi);
-    }
+    if(!p.pantry.length){finishRound([pi]);return;}
+    await pullPantry(pi);
   }
 
   if(G.over)return;
   await resolveEffect(pi,effect);
+  if(G.over)return;
+  const winners=playersWithEmptyHandAndPantry();
+  if(winners.length)finishRound(winners);
 }
 
 function resolveRaccoonPurge(pi,color){
@@ -2942,14 +2971,16 @@ async function performAttackPlay(pi,play){
   render();
   if(runnerWillUpgrade&&maybeUpgradeRunnerAfterRun(p,runnerRunCards.length)){render();await showRunnerUpgradeOverlay(p,runnerRunCards);}
 
+  if(!p.hand.length&&!p.pantry.length){
+    finishRound([pi]);
+    return 'won';
+  }
+
   if(effect===2)resolveRaccoonPurge(pi,play.top.c);
 
   if(!p.hand.length){
-    if(!p.pantry.length){
-      log(`${p.name} has emptied their hand and Pantry.`);
-    }else{
-      await pullPantry(pi);
-    }
+    if(!p.pantry.length){finishRound([pi]);return 'won';}
+    await pullPantry(pi);
   }
 
   if([5,6].includes(effect))G.attackOwner=pi;
@@ -3143,25 +3174,30 @@ async function runLoop(session=gameSessionId){
     if(!G||G.over||session!==gameSessionId)break;
     render();
     const pi=G.current;
-    const result=pi===0?await humanTurn():await botTurn(pi);
+    let result;
+    try{
+      result=pi===0?await humanTurn():await botTurn(pi);
+    }catch(error){
+      console.error('Turn recovery:',error);
+      if(pi===0)throw error;
+      const player=G.players[pi];
+      log(`${player.name}'s turn recovered automatically; they draw 1 and pass.`);
+      await drawCardsAnimated(pi,1);
+      G.passes++;
+      result=await resolveCompletedPassCycle(pi)?'stay':undefined;
+    }
     if(!G||G.over||session!==gameSessionId)break;
     if(result!=='stay'){
       G.current=(pi+1)%4;
       G.turns++;
-      if(G.finalTurnsRemaining!==null){
-        if(G.finalLapJustStarted)G.finalLapJustStarted=false;
-        else G.finalTurnsRemaining--;
-        if(G.finalTurnsRemaining<=0){
-          finishRound();
-          break;
-        }
-      }
     }
     render();
   }
 }
 
-function roundScore(player){return player.pantry.length-(player.hand.length===0?1:0);}
+function roundScore(player,pi){
+  return G.roundWinners?.includes(pi)?0:1+player.pantry.length;
+}
 
 function resetForNextRound(){
   const nextRound=G.round+1;
@@ -3171,7 +3207,7 @@ function resetForNextRound(){
   for(const player of players){
     player.hand=[];player.pantry=[];player.knownSingle=null;player.botReaction=null;
   }
-  Object.assign(G,{deck:buildDeck(),discard:[],out:[],top:null,current:firstPlayer,startingPlayer:firstPlayer,startingCardActive:true,attack:0,attackOwner:null,passes:0,lastSuccessful:null,lastPlayedBy:'Starting card',discardHistory:[],over:false,turns:0,round:nextRound,finalLapTrigger:null,finalTurnsRemaining:null,finalLapJustStarted:false});
+  Object.assign(G,{deck:buildDeck(),discard:[],out:[],top:null,current:firstPlayer,startingPlayer:firstPlayer,startingCardActive:true,attack:0,attackOwner:null,passes:0,lastSuccessful:null,lastPlayedBy:'Starting card',discardHistory:[],over:false,turns:0,round:nextRound,roundWinners:[]});
   for(const player of players){
     player.pantry=G.deck.splice(-4).map((card,slot)=>({card,up:false,slot}));
     player.hand=G.deck.splice(-8);
@@ -3185,19 +3221,24 @@ function resetForNextRound(){
   runLoop(gameSessionId);
 }
 
-function finishRound(){
+function finishRound(winnerPis=[]){
   if(!G||G.over)return;
+  const resolved=[...new Set((winnerPis.length?winnerPis:playersWithEmptyHandAndPantry()).filter(pi=>G.players[pi]))];
+  if(!resolved.length)return;
+  G.roundWinners=resolved;
   G.over=true;
   setEndGameLock(true);
   clearHumanIdleReactionTimer();
-  const scores=G.players.map(roundScore);
+  const scores=G.players.map((player,pi)=>roundScore(player,pi));
   scores.forEach((score,pi)=>{G.players[pi].totalScore+=score;});
   render();
-  const rows=G.players.map((p,pi)=>`<tr><th>${p.name}</th><td>${p.pantry.length}</td><td>${p.hand.length===0?'-1':'—'}</td><td><strong>${scores[pi]}</strong></td><td>${p.totalScore}</td></tr>`).join('');
-  const table=`<table><thead><tr><th>Player</th><th>Pantry</th><th>Empty hand</th><th>Round</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const roundWinnerNames=resolved.map(pi=>G.players[pi].name);
+  const rows=G.players.map((p,pi)=>`<tr><th>${p.name}</th><td>${resolved.includes(pi)?'Winner':'Lost'}</td><td>${p.pantry.length}</td><td><strong>${scores[pi]}</strong></td><td>${p.totalScore}</td></tr>`).join('');
+  const table=`<div class="score-table-wrap"><table><thead><tr><th>Player</th><th>Result</th><th>Pantry</th><th>Round</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const roundResult=roundWinnerNames.length>1?`${roundWinnerNames.join(' and ')} tie for the round win.`:`${roundWinnerNames[0]} wins the round.`;
   if(G.round<G.maxRounds){
-    log(`Round ${G.round} complete.`);
-    modalChoice(`Round ${G.round} complete`,`${table}<p class="meta">Lowest total score wins after five rounds.</p>`,[{label:`Start Round ${G.round+1}`,value:true,primary:true}],false,'end-game-modal').then(()=>resetForNextRound());
+    log(`${roundResult} Winners score 0; everyone else scores 1 plus their remaining Pantry Pests.`);
+    modalChoice(`Round ${G.round} complete`,`${table}<div class="victory-congrats">${roundResult}</div><p class="meta">Winners score 0. Everyone else scores 1 + remaining Pantry Pests. Lowest total wins after five rounds.</p>`,[{label:`Start Round ${G.round+1}`,value:true,primary:true}],false,'end-game-modal').then(()=>resetForNextRound());
     return;
   }
   const best=Math.min(...G.players.map(p=>p.totalScore));
@@ -3480,14 +3521,15 @@ function showDiscardHistory(){
 function showRules(){
   resetModalPresentation();
   els.modalBody.innerHTML=`<div class="rules"><h2>Pests in the Pantry — Quick Rules</h2>
-  <p><strong>Goal:</strong> finish five rounds with the lowest total score.</p>
+  <p><strong>Goal:</strong> clear your Pantry and empty your hand. After five rounds, the lowest total score wins.</p>
   <h3>Play</h3><p>You must play a numbered Pest if you can. Play a higher number, or the same number in a stronger color. Rat/0 may be played on any non-0; on another 0 it still needs a stronger color. If you cannot play, draw 1 and end your turn. The drawn card cannot be played immediately.</p>
   <h3>Color Hierarchy</h3><div class="color-hierarchy"><span class="hierarchy-color bronze-chip">Bronze</span><b>&lt;</b><span class="hierarchy-color silver-chip">Silver</span><b>&lt;</b><span class="hierarchy-color gold-chip">Gold</span></div><p class="meta">Bronze is weakest and Gold is strongest. When two cards have the same number, only a stronger color can be played on top.</p>
   <p><strong>Duplicates:</strong> play multiple copies of the same number together; Wilds may stand in for extra copies. <strong>Runs:</strong> play 3+ consecutive values of one color. Wilds may fill missing values, including multiple Wilds, as long as at least one real card is included. Choose one <em>real card in the run that would have been playable by itself</em>; that card becomes the top card and its power activates. Wilds never activate a power and can never be played alone.</p>
   <h3>Powers</h3><table>${Object.keys(PESTS).map(k=>`<tr><th>${k} <span style="opacity:.65;font-weight:600">×${PESTS[k].copies}</span></th><td>${PESTS[k].name}</td><td>${PESTS[k].effect}</td></tr>`).join('')}</table>
   <p><strong>Raccoon/2:</strong> after playing it, trash every other real card in your hand matching the played Raccoon's color. Wilds are not colored and stay in hand.</p>
+  <p><strong>Fly/4:</strong> every player with at least one hand card chooses one and discards it face-up to the Trash. Bots discard their least-favorite card. Anyone whose hand empties while Pantry Pests remain immediately takes one Pantry Pest.</p>
   <h3>Pantry</h3><p>Raccoon's matching-color purge happens first. Then, if the play emptied your hand while Pantry cards remain, take one Pantry Pest <em>before</em> resolving other powers. You may choose a face-up Pantry Pest or take any face-down Pantry Pest blindly.</p>
-  <h3>Final Lap & Scoring</h3><p>When the first player takes their final Pantry Pest into their hand, the final lap begins. Every player—including that player—gets exactly one more turn, with the triggering player acting last. Score 1 point for every Pantry Pest still in front of you, then subtract 1 point if your hand is empty. Other hand cards score nothing. Exact ties remain ties. After five rounds, the lowest total score wins.</p>
+  <h3>Winning & Scoring</h3><p>The round ends immediately when a player has no Pantry Pests and no cards in hand. A winning final card's power does not activate. Each round winner scores 0 points. Every other player scores 1 point plus 1 point for each Pantry Pest still in front of them; hand cards do not add points. If Fly makes multiple players finish together, they all score 0. After five rounds, the lowest total score wins.</p>
   <h3>Attacks</h3><p>5 adds +2 and 6 adds +1. Legal 5/6 responses stack the attack. Beetle/7 blocks the entire attack and may always be played while under attack. Runs may also defend when their chosen real top card is a playable 5 or 6, or a 7 that blocks.</p>
   <h3>Trash / Reset</h3><p>After every other player passes on a successful play, the pile goes to Trash and the last player to play gets an open restart. If all four players pass on the original starting card, everyone has drawn once; that starting card goes to Trash and a new starting card is dealt for the same starting player. Moth/3 lets its player play again, but the pile stays in place and the next play must be made on that 3. When the draw deck empties, Trash cards are shuffled into a new draw deck.</p>
   </div>`;
