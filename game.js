@@ -1557,7 +1557,7 @@ async function modalChoice(title,html,choices,allowClose=false,bodyClass=''){
     els.modalClose.style.display=allowClose?'block':'none';
     choices.forEach(ch=>{
       const b=document.createElement('button');
-      b.className=ch.primary?'primary':'';
+      b.className=[ch.primary?'primary':'',ch.className].filter(Boolean).join(' ');
       b.textContent=ch.label;
       b.onclick=()=>{
         els.modal.classList.add('hidden');
@@ -1725,7 +1725,7 @@ async function resolveEffect(pi,n){
     }
   }
 
-  // Raccoon's purge resolves in performPlay before a Pantry Pest can be taken.
+  // Raccoon's purge is handled in performPlay after any required Pantry draw.
 
   if(n===3){
     log(`${p.name} uses Moth and plays again on the 3.`);
@@ -2896,11 +2896,21 @@ async function performPlay(pi,play){
     return;
   }
 
-  if(effect===2)resolveRaccoonPurge(pi,play.top.c);
-
+  const raccoonColor=effect===2?await raccoonPurgeColor(p,play):null;
+  let refilledFromPantry=false;
   if(!p.hand.length){
-    if(!p.pantry.length){finishRound([pi]);return;}
     await pullPantry(pi);
+    refilledFromPantry=true;
+  }
+
+  if(G.over)return;
+  if(effect===2){
+    await resolveRaccoonPurge(pi,raccoonColor);
+    if(!p.hand.length){
+      if(!p.pantry.length){finishRound([pi]);return;}
+      // A just-drawn Pantry card can be trashed, but don't take two in one play.
+      if(!refilledFromPantry)await pullPantry(pi);
+    }
   }
 
   if(G.over)return;
@@ -2910,15 +2920,38 @@ async function performPlay(pi,play){
   if(winners.length)finishRound(winners);
 }
 
-function resolveRaccoonPurge(pi,color){
+async function raccoonPurgeColor(player,play){
+  if(!player.human||play.type!=='duplicates')return play.top.c;
+  const colors=[...new Set(play.cards.filter(c=>c.n===2).map(c=>c.c))].sort((a,b)=>a-b);
+  if(colors.length<2)return play.top.c;
+  const chosen=await modalChoice(
+    'Choose the Raccoon color',
+    '<p>Trash the remaining cards in your hand that match the color you pick. The strongest 2 stays on top of the pile.</p>',
+    colors.map(color=>({label:COLOR_NAMES[color],value:color,className:`raccoon-${COLOR_NAMES[color].toLowerCase()}` })),
+    false,
+    'raccoon-color-modal'
+  );
+  return colors.includes(chosen)?chosen:play.top.c;
+}
+
+async function resolveRaccoonPurge(pi,color){
   const p=G.players[pi];
   const purged=p.hand.filter(c=>isNumbered(c)&&c.c===color);
   if(!purged.length){
     log(`${p.name}'s Raccoon finds no other ${COLOR_NAMES[color]} cards to trash.`);
     return;
   }
+  window.PITPAudio?.sfx('trash');
+  const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  if(!reducedMotion){
+    const stagger=purged.length>1?Math.min(125,650/(purged.length-1)):0;
+    await Promise.all(purged.map((card,i)=>animateCardTravel(
+      card,cardSourceElement(pi,card),els.outPile,{delay:i*stagger,duration:460}
+    )));
+  }
   const ids=new Set(purged.map(c=>c.id));
   p.hand=p.hand.filter(c=>!ids.has(c.id));
+  if(p.knownSingle&&ids.has(p.knownSingle.id))p.knownSingle=null;
   G.out.push(...purged);
   log(`${p.name}'s Raccoon trashes ${purged.length} other ${COLOR_NAMES[color]} card${purged.length===1?'':'s'}: ${purged.map(cardLabel).join(', ')}.`);
   render();
@@ -2976,7 +3009,7 @@ async function performAttackPlay(pi,play){
     return 'won';
   }
 
-  if(effect===2)resolveRaccoonPurge(pi,play.top.c);
+  if(effect===2)await resolveRaccoonPurge(pi,play.top.c);
 
   if(!p.hand.length){
     if(!p.pantry.length){finishRound([pi]);return 'won';}
@@ -3235,7 +3268,7 @@ function finishRound(winnerPis=[]){
   const roundWinnerNames=resolved.map(pi=>G.players[pi].name);
   const rows=G.players.map((p,pi)=>`<tr><th>${p.name}</th><td>${resolved.includes(pi)?'Winner':'Lost'}</td><td>${p.pantry.length}</td><td><strong>${scores[pi]}</strong></td><td>${p.totalScore}</td></tr>`).join('');
   const table=`<div class="score-table-wrap"><table><thead><tr><th>Player</th><th>Result</th><th>Pantry</th><th>Round</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-  const roundResult=roundWinnerNames.length>1?`${roundWinnerNames.join(' and ')} tie for the round win.`:`${roundWinnerNames[0]} wins the round.`;
+  const roundResult=roundWinnerNames.length>1?`${roundWinnerNames.join(' and ')} tie for the round win.`:resolved[0]===0?'You win the round.':`${roundWinnerNames[0]} wins the round.`;
   if(G.round<G.maxRounds){
     log(`${roundResult} Winners score 0; everyone else scores 1 plus their remaining Pantry Pests.`);
     modalChoice(`Round ${G.round} complete`,`${table}<div class="victory-congrats">${roundResult}</div><p class="meta">Winners score 0. Everyone else scores 1 + remaining Pantry Pests. Lowest total wins after five rounds.</p>`,[{label:`Start Round ${G.round+1}`,value:true,primary:true}],false,'end-game-modal').then(()=>resetForNextRound());
@@ -3245,8 +3278,8 @@ function finishRound(winnerPis=[]){
   const winners=G.players.map((p,pi)=>({p,pi})).filter(x=>x.p.totalScore===best);
   window.PITPAudio?.sfx(winners.some(x=>x.pi===0)?'win':'lose');
   winners.forEach(x=>reactGameEnd(x.pi));
-  const title=winners.length>1?'MATCH TIED':`${winners[0].p.name} WINS`;
-  const result=winners.length>1?`${winners.map(x=>x.p.name).join(' and ')} tie with ${best} points.`:`${winners[0].p.name} wins with ${best} points.`;
+  const title=winners.length>1?'MATCH TIED':winners[0].pi===0?'YOU WIN':`${winners[0].p.name} WINS`;
+  const result=winners.length>1?`${winners.map(x=>x.p.name).join(' and ')} tie with ${best} points.`:winners[0].pi===0?`You win with ${best} point${best===1?'':'s'}.`:`${winners[0].p.name} wins with ${best} point${best===1?'':'s'}.`;
   log(result);
   setTimeout(()=>modalChoice(title,`${table}<div class="victory-congrats">${result}</div><p class="end-game-message">Lowest score wins.</p>`,[{label:'Home',value:'home',primary:true}],false,'end-game-modal').then(()=>showHomeScreen()),700);
 }
@@ -3258,7 +3291,7 @@ function endGame(pi){
   clearHumanIdleReactionTimer();
   reactGameEnd(pi);
   render();
-  log(`${G.players[pi].name} wins!`);
+  log(pi===0?'You win!':`${G.players[pi].name} wins!`);
 
   const won=pi===0;
   if(won){
@@ -3526,9 +3559,9 @@ function showRules(){
   <h3>Color Hierarchy</h3><div class="color-hierarchy"><span class="hierarchy-color bronze-chip">Bronze</span><b>&lt;</b><span class="hierarchy-color silver-chip">Silver</span><b>&lt;</b><span class="hierarchy-color gold-chip">Gold</span></div><p class="meta">Bronze is weakest and Gold is strongest. When two cards have the same number, only a stronger color can be played on top.</p>
   <p><strong>Duplicates:</strong> play multiple copies of the same number together; Wilds may stand in for extra copies. <strong>Runs:</strong> play 3+ consecutive values of one color. Wilds may fill missing values, including multiple Wilds, as long as at least one real card is included. Choose one <em>real card in the run that would have been playable by itself</em>; that card becomes the top card and its power activates. Wilds never activate a power and can never be played alone.</p>
   <h3>Powers</h3><table>${Object.keys(PESTS).map(k=>`<tr><th>${k} <span style="opacity:.65;font-weight:600">×${PESTS[k].copies}</span></th><td>${PESTS[k].name}</td><td>${PESTS[k].effect}</td></tr>`).join('')}</table>
-  <p><strong>Raccoon/2:</strong> after playing it, trash every other real card in your hand matching the played Raccoon's color. Wilds are not colored and stay in hand.</p>
+  <p><strong>Raccoon/2:</strong> after playing it, trash every other real card in your hand matching the played Raccoon's color. When you play real 2s in different colors together, choose which of those colors activates. The strongest 2 still goes on top. Wilds are not colored and stay in hand.</p>
   <p><strong>Fly/4:</strong> every player with at least one hand card chooses one and discards it face-up to the Trash. Bots discard their least-favorite card. Anyone whose hand empties while Pantry Pests remain immediately takes one Pantry Pest.</p>
-  <h3>Pantry</h3><p>Raccoon's matching-color purge happens first. Then, if the play emptied your hand while Pantry cards remain, take one Pantry Pest <em>before</em> resolving other powers. You may choose a face-up Pantry Pest or take any face-down Pantry Pest blindly.</p>
+  <h3>Pantry</h3><p>If the cards you played emptied your hand and Pantry cards remain, take one Pantry Pest <em>before</em> resolving the power. A matching card you just took can be trashed by Raccoon. You may choose a face-up Pantry Pest or take any face-down Pantry Pest blindly.</p>
   <h3>Winning & Scoring</h3><p>The round ends immediately when a player has no Pantry Pests and no cards in hand. A winning final card's power does not activate. Each round winner scores 0 points. Every other player scores 1 point plus 1 point for each Pantry Pest still in front of them; hand cards do not add points. If Fly makes multiple players finish together, they all score 0. After five rounds, the lowest total score wins.</p>
   <h3>Attacks</h3><p>5 adds +2 and 6 adds +1. Legal 5/6 responses stack the attack. Beetle/7 blocks the entire attack and may always be played while under attack. Runs may also defend when their chosen real top card is a playable 5 or 6, or a 7 that blocks.</p>
   <h3>Trash / Reset</h3><p>After every other player passes on a successful play, the pile goes to Trash and the last player to play gets an open restart. If all four players pass on the original starting card, everyone has drawn once; that starting card goes to Trash and a new starting card is dealt for the same starting player. Moth/3 lets its player play again, but the pile stays in place and the next play must be made on that 3. When the draw deck empties, Trash cards are shuffled into a new draw deck.</p>

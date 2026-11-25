@@ -345,3 +345,32 @@ body.compact-preview .log{height:auto!important;min-height:0!important;flex:1!im
   body.compact-preview .hand-sort{width:100%!important;margin-left:0!important;justify-content:flex-start!important}
   body.compact-preview.home-mode .intro-home-actions{grid-template-columns:1fr 1fr!important;width:94vw!important}
 }
+
+/* Shared popup facelift: warm pantry lighting, clearly grouped choices. */
+#modal { background:rgba(10,7,6,.74); backdrop-filter:blur(5px); }
+#modal .modal-card {
+  color:#fff2db; border:1px solid #ce9650;
+  border-radius:19px;
+  background:radial-gradient(ellipse at top,#533720 0%,#30241d 36%,#1a1514 78%);
+  box-shadow:0 0 0 3px #21170e,0 0 0 4px #87623a,0 20px 60px #000a;
+  padding:clamp(20px,4vw,34px);
+  scrollbar-color:#9d6c39 #221914;
+}
+#modal #modalBody > h2,
+#modal #modalBody > .rules > h2 { margin:0 28px .65em; color:#ffe39d; text-align:center; line-height:1.15; text-wrap:balance; }
+#modal #modalBody > p { line-height:1.45; }
+#modal .choice-grid { gap:10px; justify-content:center; margin-top:14px; }
+#modal .choice-grid > button { min-height:44px; border-radius:10px; }
+#modal button:focus-visible { outline:2px solid #ffe59b; outline-offset:2px; }
+#modal .modal-close {
+  z-index:3; top:5px; right:5px; width:44px; min-height:44px; padding:0;
+  color:#ffe7b4; background:#302015; border:1px solid #875a35; border-radius:50%;
+}
+#modal .raccoon-color-modal { max-width:500px; margin-inline:auto; text-align:center; }
+#modal .raccoon-color-modal h2 { margin-inline:0; }
+#modal .raccoon-color-modal p { max-width:420px; margin:0 auto; color:#f2ddba; }
+#modal .raccoon-color-modal button { flex:1 1 100px; max-width:155px; color:#21150c; font-weight:850; }
+#modal .raccoon-bronze { background:linear-gradient(#eebb91,#bf7546); border-color:#ffcfac; }
+#modal .raccoon-silver { background:linear-gradient(#f3f4f1,#b7c1c9); border-color:#f3f4f1; }
+#modal .raccoon-gold { background:linear-gradient(#ffe18c,#d5a441); border-color:#ffe18c; }
+body #toast { border-color:#d5974a; background:#302016; color:#fff0d8; }
