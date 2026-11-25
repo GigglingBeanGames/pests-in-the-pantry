@@ -1027,8 +1027,8 @@ function sortHumanHand(){
       return b.n-a.n;
     }
 
-    // Number view: strongest number first, with no color sorting.
-    return b.n-a.n;
+    // Number view: strongest number first, then strongest color within it.
+    return (b.n-a.n)||(b.c-a.c);
   });
 }
 
