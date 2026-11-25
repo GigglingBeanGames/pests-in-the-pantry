@@ -1945,8 +1945,17 @@ async function showReceivedCardModal(fromPi,card){
   });
 }
 
+function termiteRightNeighbor(from,participants){
+  for(let step=1;step<G.players.length;step++){
+    const to=(from+G.players.length-step)%G.players.length;
+    if(participants.includes(to))return to;
+  }
+  return null;
+}
+
 async function resolveTermite(source){
   const passes=new Map();
+  const participantsWithCards=G.players.map((p,pi)=>p.hand.length?pi:-1).filter(pi=>pi>=0);
 
   // Everyone chooses before any cards move.
   for(let q=0;q<4;q++){
@@ -1957,7 +1966,7 @@ async function resolveTermite(source){
       const ch=await chooseCardModal('Choose a card to pass right',p.hand);
       if(ch>=0)passes.set(q,p.hand[ch]);
     }else{
-      const idx=botPassChoice(q);
+      const idx=botPassChoice(q,termiteRightNeighbor(q,participantsWithCards));
       if(idx>=0)passes.set(q,p.hand[idx]);
     }
   }
@@ -1971,8 +1980,7 @@ async function resolveTermite(source){
   // Pass to the right (opposite turn order), skipping players without cards.
   const transfers=[];
   for(const from of participants){
-    let to=(from+3)%4;
-    while(!participants.includes(to))to=(to+3)%4;
+    const to=termiteRightNeighbor(from,participants);
     transfers.push({from,to,card:passes.get(from)});
   }
 
@@ -2232,8 +2240,18 @@ function baseGrantAwarePassChoice(pi){
   return idx;
 }
 
-function botPassChoice(pi){
+function botThreatPassCard(cards){
+  // A Rat is an especially easy card to get rid of; don't hand a near-winner one.
+  return cards.filter(c=>isNumbered(c)&&c.n>0)
+    .sort((a,b)=>a.n-b.n||a.c-b.c)[0]||null;
+}
+
+function botPassChoice(pi,termiteRecipient=null){
   const p=G.players[pi];
+  if(termiteRecipient!==null&&isOnWinningBrink(G.players[termiteRecipient])){
+    const low=botThreatPassCard(p.hand);
+    if(low)return p.hand.indexOf(low);
+  }
   if(!p?.grantBrain)return baseGrantAwarePassChoice(pi);
 
   const ids=grantCompletedRunIds(p.hand);
@@ -2781,9 +2799,76 @@ function baseUpdatedGrantChoosePlay(pi,attackMode=false){
   return baseBotChoosePlay(pi,attackMode);
 }
 
+function isOnWinningBrink(player){
+  return !!player&&!player.pantry.length&&player.hand.length>=1&&player.hand.length<=2;
+}
+
+function botThreatCandidates(pi,attackMode){
+  const hand=G.players[pi].hand;
+  const options=attackMode
+    ? hand.filter(c=>c.n===7||([5,6].includes(c.n)&&legalCard(c,G.top)))
+    : normalLegalPlays(pi);
+  const plays=options.map(c=>({type:'single',cards:[c],n:c.n,top:c,effect:c.n}));
+  const wilds=hand.filter(isWild);
+  for(const n of new Set(options.map(c=>c.n))){
+    const top=options.filter(c=>c.n===n).reduce((a,b)=>a.c>b.c?a:b);
+    const cards=[...hand.filter(c=>c.n===n),...wilds];
+    if(cards.length>1)plays.push({type:'duplicates',cards,n,top,effect:n});
+  }
+  for(const run of attackMode?allAttackRuns(pi):allRuns(pi)){
+    // One run can have multiple legal effects. A run containing a 4 doesn't
+    // trigger Fly unless the 4 is the chosen real top card.
+    for(const top of run.playableCards)plays.push({...run,top,effect:top.n});
+  }
+  return plays;
+}
+
+function compareBotThreatPlays(a,b){
+  return b.top.n-a.top.n||b.top.c-a.top.c||b.cards.length-a.cards.length;
+}
+
+function botBrinkPlay(pi,attackMode=false){
+  const players=G.players;
+  const p=players[pi];
+  const threats=players.map((player,index)=>index!==pi&&isOnWinningBrink(player)?index:-1).filter(index=>index>=0);
+  if(!threats.length)return null;
+
+  const options=botThreatCandidates(pi,attackMode);
+  const next=(pi+1)%players.length;
+  const nonFly=options.filter(play=>play.effect!==4);
+  const pool=nonFly.length?nonFly:options;
+  if(!pool.length)return null;
+  const finishing=pool.filter(play=>!p.pantry.length&&play.cards.length===p.hand.length);
+  if(finishing.length)return finishing.sort(compareBotThreatPlays)[0];
+
+  // Hornet/Mosquito only target the next turn. Scorpion reaches every seat.
+  const ranks=play=>play.effect===9?(threats.length>1?4:1)
+    : threats.includes(next)?({5:3,6:2}[play.effect]||0):0;
+  const attacks=pool.filter(play=>ranks(play)>0);
+  if(attacks.length)return attacks.sort((a,b)=>ranks(b)-ranks(a)||compareBotThreatPlays(a,b))[0];
+  if(attackMode)return null; // Leave ordinary defense to the existing strategy.
+
+  const handSeats=players.map((player,index)=>player.hand.length?index:-1).filter(index=>index>=0);
+  if(threats.includes(termiteRightNeighbor(pi,handSeats))){
+    const passes=pool.filter(play=>{
+      if(play.effect!==8)return false;
+      const sent=botThreatPassCard(p.hand.filter(c=>!play.cards.includes(c)));
+      return sent&&sent.n<=4;
+    });
+    if(passes.length)return passes.sort(compareBotThreatPlays)[0];
+  }
+  return pool.sort(compareBotThreatPlays)[0];
+}
+
 function botChoosePlay(pi,attackMode=false){
   const p=G.players[pi];
+  const brinkPlay=botBrinkPlay(pi,attackMode);
+  if(brinkPlay)return brinkPlay;
   const original=baseUpdatedGrantChoosePlay(pi,attackMode);
+  if(!attackMode&&original?.effect===4&&G.players.some((player,index)=>index!==pi&&totalCards(index)<=3)){
+    const safe=botThreatCandidates(pi,false).filter(play=>play.effect!==4);
+    if(safe.length)return safe.sort(compareBotThreatPlays)[0];
+  }
 
   if(!p?.grantBrain||!original)return original;
 
@@ -3200,6 +3285,8 @@ async function handleAttack(pi){
   await waitWhileHome();
 
   if(isRageAggressor(p)){
+    const brinkPlay=botBrinkPlay(pi,true);
+    if(brinkPlay)return performAttackPlay(pi,brinkPlay);
     // Best Rage line: 6 first (easier to continue), then 5; always one card, weakest legal color.
     for(const n of [6,5]){
       const opts=p.hand.filter(c=>c.n===n&&legalCard(c,G.top)).sort((a,b)=>a.c-b.c);
