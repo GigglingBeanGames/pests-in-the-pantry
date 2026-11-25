@@ -312,8 +312,6 @@ body.compact-preview .log{height:auto!important;min-height:0!important;flex:1!im
   body.compact-preview .modal{padding:10px!important;align-items:center!important}
   body.compact-preview .modal-card{width:min(100%,620px)!important;max-height:90svh!important;overflow:auto!important;padding:16px 12px!important}
   body.compact-preview .choice-grid{grid-template-columns:repeat(auto-fit,minmax(92px,1fr))!important;gap:8px!important}
-  body.compact-preview .score-table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  body.compact-preview .score-table-wrap table{min-width:520px}
   body.compact-preview .toast{left:10px!important;right:10px!important;bottom:12px!important;width:auto!important;max-width:none!important}
 
   /* Mobile home/setup screens. */
@@ -347,7 +345,7 @@ body.compact-preview .log{height:auto!important;min-height:0!important;flex:1!im
 }
 
 /* Shared popup facelift: warm pantry lighting, clearly grouped choices. */
-#modal { background:rgba(10,7,6,.74); backdrop-filter:blur(5px); }
+#modal { z-index:3000; background:rgba(10,7,6,.74); backdrop-filter:blur(5px); }
 #modal .modal-card {
   color:#fff2db; border:1px solid #ce9650;
   border-radius:19px;
@@ -361,6 +359,7 @@ body.compact-preview .log{height:auto!important;min-height:0!important;flex:1!im
 #modal #modalBody > p { line-height:1.45; }
 #modal .choice-grid { gap:10px; justify-content:center; margin-top:14px; }
 #modal .choice-grid > button { min-height:44px; border-radius:10px; }
+#modal #gameModalTitle:focus { outline:none; }
 #modal button:focus-visible { outline:2px solid #ffe59b; outline-offset:2px; }
 #modal .modal-close {
   z-index:3; top:5px; right:5px; width:44px; min-height:44px; padding:0;
@@ -374,3 +373,70 @@ body.compact-preview .log{height:auto!important;min-height:0!important;flex:1!im
 #modal .raccoon-silver { background:linear-gradient(#f3f4f1,#b7c1c9); border-color:#f3f4f1; }
 #modal .raccoon-gold { background:linear-gradient(#ffe18c,#d5a441); border-color:#ffe18c; }
 body #toast { border-color:#d5974a; background:#302016; color:#fff0d8; }
+
+
+/* Compact, readable game dialogs. Keep longer rules and board inspectors scrollable. */
+#modal .modal-card{max-height:88vh;max-height:88dvh;overscroll-behavior:contain}
+#modal #modalBody > h2,
+#modal #modalBody > .rules > h2{font-size:clamp(1.22rem,3.4vw,1.8rem);overflow-wrap:anywhere}
+#modal .modal-help,
+#modal .decision-modal > p:not(.results-kicker,.score-note),
+#modal .pantry-choice-modal > p{max-width:49ch;margin:0 auto;color:#e1caaf;line-height:1.48}
+#modal .modal-help{font-size:.88rem}
+#modal .choice-grid{margin-top:18px}
+#modal .choice-grid > .primary{background:linear-gradient(#efc979,#c79446);border-color:#f0c579;color:#291b10;font-weight:800}
+#modal .modal-card:has(.received-card-modal,.raccoon-color-modal){max-width:530px}
+#modal .received-card-modal{min-height:0}
+#modal .received-card-modal > .received-from{margin:0}
+#modal .received-card-spot{min-height:180px;margin:10px 0 4px}
+#modal .pantry-choice-modal:not(.fly-revealing){min-height:0}
+#modal .card-choice-button{display:grid;place-items:center;padding:4px;background:#2f2319;border-color:#8b6743}
+#modal .card-choice-button:hover,
+#modal .card-choice-button:focus-visible{border-color:#ffd783}
+#modal .review-board-btn{
+  position:sticky;z-index:4;top:0;display:block;min-height:44px;margin:0 0 10px auto;padding:7px 16px;color:#ffe5b2;background:#2d2118;
+  border:1px solid #946b45;border-radius:10px;font-weight:750;font-size:.9rem;
+}
+.resume-decision-btn{
+  position:fixed;z-index:4500;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));
+  min-height:46px;padding:9px 15px;border:1px solid #f1c781;border-radius:12px;
+  background:linear-gradient(#f3d189,#c9954c);color:#281a10;box-shadow:0 6px 22px #000b;
+}
+.resume-decision-btn:focus-visible{outline:2px solid #fff3bf;outline-offset:2px}
+body:has(#resumeDecisionBtn:not(.hidden)) #yourHand .game-card{cursor:default}
+
+/* Round and match results: outcome first, aligned scoreboard, one clear next step. */
+#modal .modal-card:has(.results-modal){width:min(100%,630px)!important;padding:clamp(15px,4vw,30px)!important}
+#modal .results-modal{text-align:center}
+#modal #modalBody > .results-kicker{
+  display:inline-flex;align-items:center;gap:7px;margin:0 0 8px;
+  color:#f0cc88;font-size:.71rem;font-weight:800;letter-spacing:.105em;text-transform:uppercase;
+}
+#modal .results-kicker::before,#modal .results-kicker::after{content:"";width:14px;height:1px;background:#cb9b59}
+#modal #modalBody.results-modal > h2{margin:0 0 18px;font-size:clamp(1.45rem,5vw,2.25rem);color:#ffdf95;line-height:1.12}
+#modal .results-modal .score-table-wrap{width:100%;overflow:hidden;border:1px solid #896340;border-radius:12px;background:#211811}
+#modal .results-modal table{width:100%;min-width:0;table-layout:fixed;border-spacing:0;font-variant-numeric:tabular-nums}
+#modal .results-modal th,#modal .results-modal td{padding:10px 6px;text-align:center}
+#modal .results-modal thead{background:#44301e;color:#eecfa3}
+#modal .results-modal thead th{font-size:.75rem;font-weight:800}
+#modal .results-modal th:first-child{width:42%;padding-left:13px;text-align:left}
+#modal .results-modal tbody th,#modal .results-modal tbody td{border-top:1px solid #65482d;font-size:.88rem}
+#modal .results-modal tbody tr:nth-child(even){background:#2b2018}
+#modal .results-modal tbody tr.score-winner{background:#48371f}
+#modal .results-modal .score-player{display:block;overflow-wrap:anywhere}
+#modal .results-modal .score-winner-badge{
+  display:inline-block;margin:4px 0 0;padding:2px 6px;border-radius:6px;
+  background:#edd193;color:#302116;font-size:.66rem;font-weight:850;line-height:1.2;
+}
+#modal .results-modal .score-total{color:#ffdc9a;font-weight:850;background:#f7cb7911}
+#modal .results-modal .score-note{margin:12px auto 0;max-width:49ch;color:#dbc1a2;font-size:.79rem;line-height:1.45}
+#modal .results-modal .choice-grid{margin-top:13px}
+#modal .results-modal .choice-grid>.primary{min-width:min(100%,180px)}
+@media(max-width:480px){
+  #modal .modal-card:has(.results-modal){padding:14px 11px!important;max-height:calc(100dvh - 24px)!important}
+  #modal #modalBody.results-modal > h2{margin-bottom:13px}
+  #modal .results-modal th,#modal .results-modal td{padding:8px 3px}
+  #modal .results-modal th:first-child{padding-left:8px}
+  #modal .results-modal .choice-grid>.primary{width:100%}
+  #modal .card-choice-modal .choice-grid{gap:6px!important}
+}

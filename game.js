@@ -12,7 +12,7 @@ const PESTS={
   5:{name:'Hornet',icon:'🐝',art:'assets/pests/hornet.png',copies:9,effect:'Attack +2; next player loses turn.'},
   6:{name:'Mosquito',icon:'🦟',art:'assets/pests/mosquito.png',copies:12,effect:'Attack +1; next player loses turn.'},
   7:{name:'Beetle',icon:'🪲',art:'assets/pests/beetle.png',copies:12,effect:'Blocks the entire attack.'},
-  8:{name:'Termite',icon:'🐛',art:'assets/pests/termite.png',copies:12,effect:'Everyone passes 1 card left.'},
+  8:{name:'Termite',icon:'🐛',art:'assets/pests/termite.png',copies:12,effect:'Everyone passes 1 card right.'},
   9:{name:'Scorpion',icon:'🦂',art:'assets/pests/scorpion.png',copies:6,effect:'Everyone draws 1.'},
   10:{name:'Cockroach',icon:'🪳',art:'assets/pests/cockroach.png',copies:9,effect:'You draw 1.'},
   W:{name:'Wild',icon:'✦',art:null,copies:6,effect:'Use with a real card as a duplicate or to fill a run. Never plays alone.'}
@@ -449,6 +449,13 @@ let G=null;
 let selected=new Set();
 let humanResolver=null;
 let modalResolver=null;
+let reviewingDecision=false;
+let boardInspector=null;
+const appRoot=document.getElementById('app');
+const modalCard=els.modal.querySelector('.modal-card');
+const reviewBoardBtn=document.getElementById('reviewBoardBtn');
+const resumeDecisionBtn=document.getElementById('resumeDecisionBtn');
+const reviewLockedControls=[els.play,els.draw,els.drawPile,els.sortColor,els.sortNumber,els.home,els.clearLog,els.selectWinner,els.fastBotsToggle,els.showHandsToggle].filter(Boolean);
 let handSortMode='number';
 let homePaused=false;
 let pileClearing=false;
@@ -961,8 +968,17 @@ function cardEl(card,{clickable=false,selectedCard=false,faceDown=false,small=fa
 
 
 let activeHoverCard=null;
+const hoverOwnerObserver=new MutationObserver(()=>{
+  if(activeHoverCard&&!activeHoverCard.isConnected)hideCardHoverTip();
+});
+function hideCardHoverTip(){
+  activeHoverCard=null;
+  hoverOwnerObserver.disconnect();
+  els.cardHoverTip?.classList.add('hidden');
+}
 function positionCardHoverTip(card){
-  if(!els.cardHoverTip||!card)return;
+  if(!els.cardHoverTip||activeHoverCard!==card)return;
+  if(!card.isConnected||!card.getClientRects().length){hideCardHoverTip();return;}
   const r=card.getBoundingClientRect();
   const tip=els.cardHoverTip;
   const tw=tip.offsetWidth||190;
@@ -986,13 +1002,14 @@ function positionCardHoverTip(card){
 }
 document.addEventListener('pointerover',e=>{
   const card=e.target.closest?.('.game-card[data-effect]');
-  if(!card||!els.cardHoverTip)return;
+  if(!card||!els.cardHoverTip||!card.isConnected||e.pointerType==='touch')return;
   if(activeHoverCard===card)return;
   const from=e.relatedTarget;
   if(from&&card.contains(from))return;
-  activeHoverCard=card;
   const effect=card.dataset.effect;
   if(!effect)return;
+  activeHoverCard=card;
+  hoverOwnerObserver.observe(document.body,{childList:true,subtree:true});
   els.cardHoverTip.textContent=effect;
   els.cardHoverTip.classList.remove('hidden');
   requestAnimationFrame(()=>positionCardHoverTip(card));
@@ -1002,13 +1019,11 @@ document.addEventListener('pointerout',e=>{
   if(!card||!els.cardHoverTip||activeHoverCard!==card)return;
   const next=e.relatedTarget;
   if(next&&card.contains(next))return;
-  activeHoverCard=null;
-  els.cardHoverTip.classList.add('hidden');
+  hideCardHoverTip();
 });
-window.addEventListener('scroll',()=>{
-  activeHoverCard=null;
-  els.cardHoverTip?.classList.add('hidden');
-},{passive:true});
+document.addEventListener('pointercancel',hideCardHoverTip);
+window.addEventListener('blur',hideCardHoverTip);
+window.addEventListener('scroll',hideCardHoverTip,{passive:true,capture:true});
 
 function sortHumanHand(){
   if(!G)return;
@@ -1222,7 +1237,7 @@ function render() {
     if(newHumanCardIds.has(card.id))el.classList.add('newly-drawn');
 
     el.onclick = () => {
-      if (G.current !== 0 || G.over || pileClearing) return;
+      if (reviewingDecision || G.current !== 0 || G.over || pileClearing) return;
       selected.has(i) ? selected.delete(i) : selected.add(i);
       render();
     };
@@ -1426,8 +1441,107 @@ function validateSelection(pi,indices,attackMode=false){
 }
 
 function resetModalPresentation(){
+  hideCardHoverTip();
   els.modalBody.querySelectorAll('.bot-win-summary').forEach(el=>el.remove());
 }
+
+function setModalReviewable(reviewable){
+  reviewBoardBtn.classList.toggle('hidden',!reviewable);
+}
+
+function showGameModal({dismissible=false,reviewable=false}={}){
+  hideCardHoverTip();
+  els.modalClose.style.display=dismissible?'block':'none';
+  setModalReviewable(reviewable);
+  resumeDecisionBtn.classList.add('hidden');
+  const title=els.modalBody.querySelector('h2');
+  if(title){
+    title.id='gameModalTitle';
+    title.tabIndex=-1;
+    els.modal.setAttribute('aria-labelledby',title.id);
+  }else els.modal.removeAttribute('aria-labelledby');
+  els.modal.classList.remove('hidden');
+  appRoot.inert=true;
+  modalCard.scrollTop=0;
+  title?.focus({preventScroll:true});
+}
+
+function closeGameModal(value){
+  const resolve=modalResolver;
+  modalResolver=null;
+  els.modal.classList.add('hidden');
+  els.modalBody.className='';
+  setModalReviewable(false);
+  appRoot.inert=false;
+  resetModalPresentation();
+  resolve?.(value);
+}
+
+function setBoardReview(reviewing){
+  hideCardHoverTip();
+  if(reviewing)decisionScrollTop=modalCard.scrollTop;
+  reviewingDecision=reviewing;
+  reviewLockedControls.forEach(control=>{control.inert=reviewing;});
+  appRoot.inert=!reviewing;
+  els.modal.classList.toggle('hidden',reviewing);
+  resumeDecisionBtn.classList.toggle('hidden',!reviewing);
+  if(!reviewing){
+    els.modalBody.querySelector('h2')?.focus({preventScroll:true});
+    modalCard.scrollTop=decisionScrollTop;
+  }else resumeDecisionBtn.focus({preventScroll:true});
+}
+
+reviewBoardBtn.onclick=()=>{
+  if(modalResolver&&!reviewBoardBtn.classList.contains('hidden'))setBoardReview(true);
+};
+resumeDecisionBtn.onclick=()=>{if(reviewingDecision&&!boardInspector)setBoardReview(false);};
+
+// Inspectors reuse the shell, but keep the original decision DOM and its handlers intact.
+function openBoardInspector(showInspector){
+  if(!reviewingDecision){
+    if(els.modal.classList.contains('hidden'))showInspector();
+    return;
+  }
+  if(boardInspector)return;
+  const content=document.createDocumentFragment();
+  content.append(...els.modalBody.childNodes);
+  boardInspector={content,bodyClass:els.modalBody.className,resolve:modalResolver,scroll:decisionScrollTop,opener:document.activeElement};
+  els.modalBody.className='';
+  showInspector();
+}
+
+function dismissGameModal(){
+  if(boardInspector){
+    const {content,bodyClass,resolve,scroll,opener}=boardInspector;
+    boardInspector=null;
+    hideCardHoverTip();
+    els.modal.classList.add('hidden');
+    els.modalBody.replaceChildren(content);
+    els.modalBody.className=bodyClass;
+    modalResolver=resolve;
+    els.modalClose.style.display='none';
+    setModalReviewable(true);
+    appRoot.inert=false;
+    resumeDecisionBtn.classList.remove('hidden');
+    decisionScrollTop=scroll;
+    (opener?.isConnected&&opener!==document.body?opener:resumeDecisionBtn).focus({preventScroll:true});
+    return;
+  }
+  if(!reviewBoardBtn.classList.contains('hidden')){reviewBoardBtn.click();return;}
+  if(els.modalClose.style.display==='block'&&modalResolver)closeGameModal(null);
+}
+
+let decisionScrollTop=0;
+document.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||event.defaultPrevented)return;
+  if(!els.modal.classList.contains('hidden')){
+    dismissGameModal();
+    event.preventDefault();
+  }else if(reviewingDecision){
+    resumeDecisionBtn.click();
+    event.preventDefault();
+  }
+});
 
 let victoryHomeTimer=null;
 
@@ -1521,6 +1635,7 @@ function buildVictoryCelebration(){
 }
 
 function showVictoryCelebration(){
+  hideCardHoverTip();
   window.PITPAudio?.sfx('win');
   const v=buildVictoryCelebration();
   requestAnimationFrame(()=>v.classList.add('show'));
@@ -1546,28 +1661,22 @@ function botWinSummaryHtml(pi){
   return `<div class="bot-win-summary"><img src="${info.image}" alt="${p.name}"><div class="cup">🏆</div><div class="txt">${p.name} takes the pantry!</div></div>`;
 }
 
-async function modalChoice(title,html,choices,allowClose=false,bodyClass=''){
+async function modalChoice(title,html,choices,allowClose=false,bodyClass='',{reviewable=false,kicker=''}={}){
   resetModalPresentation();
   els.modalBody.className=[bodyClass,'decision-modal'].filter(Boolean).join(' ');
-  els.modalBody.innerHTML=`<h2>${title}</h2>${html||''}<div id="choiceGrid" class="choice-grid"></div>`;
+  els.modalBody.innerHTML=`${kicker?`<p class="results-kicker">${kicker}</p>`:''}<h2>${title}</h2>${html||''}<div id="choiceGrid" class="choice-grid"></div>`;
   const grid=document.getElementById('choiceGrid');
   return new Promise(resolve=>{
     modalResolver=resolve;
-    els.modal.classList.remove('hidden');
-    els.modalClose.style.display=allowClose?'block':'none';
     choices.forEach(ch=>{
       const b=document.createElement('button');
+      b.type='button';
       b.className=[ch.primary?'primary':'',ch.className].filter(Boolean).join(' ');
       b.textContent=ch.label;
-      b.onclick=()=>{
-        els.modal.classList.add('hidden');
-        els.modalBody.className='';
-        resetModalPresentation();
-        modalResolver=null;
-        resolve(ch.value);
-      };
+      b.onclick=()=>closeGameModal(ch.value);
       grid.appendChild(b);
     });
+    showGameModal({dismissible:allowClose,reviewable});
   });
 }
 
@@ -1585,13 +1694,29 @@ function showToast(message){
 }
 async function chooseCardModal(title,cards,{allowSkip=false}={}){
   resetModalPresentation();
- els.modalBody.className='card-choice-modal';
- els.modalBody.innerHTML=`<h2>${title}</h2><div id="choiceGrid" class="choice-grid"></div>`;const grid=document.getElementById('choiceGrid');
- return new Promise(resolve=>{
-   modalResolver=resolve;els.modal.classList.remove('hidden');els.modalClose.style.display='none';
-   cards.forEach((c,i)=>{const wrap=document.createElement('button');wrap.style.padding='4px';wrap.appendChild(cardEl(c));wrap.onclick=()=>{els.modal.classList.add('hidden');els.modalBody.className='';resetModalPresentation();modalResolver=null;resolve(i);};grid.appendChild(wrap);});
-   if(allowSkip){const b=document.createElement('button');b.textContent='Take nothing';b.onclick=()=>{els.modal.classList.add('hidden');els.modalBody.className='';resetModalPresentation();modalResolver=null;resolve(-1);};grid.appendChild(b);}
- });
+  els.modalBody.className='card-choice-modal';
+  els.modalBody.innerHTML=`<h2>${title}</h2><p class="modal-help">Select a card to confirm your choice.</p><div id="choiceGrid" class="choice-grid"></div>`;
+  const grid=document.getElementById('choiceGrid');
+  return new Promise(resolve=>{
+    modalResolver=resolve;
+    cards.forEach((card,index)=>{
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='card-choice-button';
+      button.setAttribute('aria-label',cardLabel(card));
+      button.appendChild(cardEl(card));
+      button.onclick=()=>closeGameModal(index);
+      grid.appendChild(button);
+    });
+    if(allowSkip){
+      const button=document.createElement('button');
+      button.type='button';
+      button.textContent='Take nothing';
+      button.onclick=()=>closeGameModal(-1);
+      grid.appendChild(button);
+    }
+    showGameModal({reviewable:true});
+  });
 }
 
 async function choosePantryPositionModal(pi,title='Choose a Pantry Pest',mode='take'){
@@ -1623,9 +1748,6 @@ async function choosePantryPositionModal(pi,title='Choose a Pantry Pest',mode='t
 
   return new Promise(resolve=>{
     modalResolver=resolve;
-    els.modal.classList.remove('hidden');
-    els.modalClose.style.display='none';
-
     p.pantry.forEach((item,idx)=>{
       const eligible=isTake || isAnt || isSwap || (isFly&&!item.up) || (isFlyTake&&item.up);
       const b=document.createElement('button');
@@ -1646,6 +1768,9 @@ async function choosePantryPositionModal(pi,title='Choose a Pantry Pest',mode='t
 
       if(eligible){
         b.onclick=async()=>{
+          grid.inert=true;
+          setModalReviewable(false);
+          hideCardHoverTip();
           // Fly gets a dramatic reveal before the modal disappears.
           if(isFly){
             // Once the reveal is chosen, remove the instructional text/cards so
@@ -1659,16 +1784,12 @@ async function choosePantryPositionModal(pi,title='Choose a Pantry Pest',mode='t
             preview.appendChild(revealCard);
             await sleep(950);
           }
-          els.modal.classList.add('hidden');
-          els.modalBody.className='';
-          els.modalClose.style.display='';
-          resetModalPresentation();
-          modalResolver=null;
-          resolve(idx);
+          closeGameModal(idx);
         };
       }
       grid.appendChild(b);
     });
+    showGameModal({reviewable:true});
   });
 }
 
@@ -1819,16 +1940,8 @@ async function showReceivedCardModal(fromPi,card){
 
   return new Promise(resolve=>{
     modalResolver=resolve;
-    els.modal.classList.remove('hidden');
-    els.modalClose.style.display='none';
-    document.getElementById('receivedCardDismiss').onclick=()=>{
-      els.modal.classList.add('hidden');
-      els.modalBody.className='';
-      els.modalClose.style.display='';
-      resetModalPresentation();
-      modalResolver=null;
-      resolve(true);
-    };
+    document.getElementById('receivedCardDismiss').onclick=()=>closeGameModal(true);
+    showGameModal();
   });
 }
 
@@ -1841,7 +1954,7 @@ async function resolveTermite(source){
     if(!p.hand.length)continue;
 
     if(p.human){
-      const ch=await chooseCardModal('Choose a card to pass left',p.hand);
+      const ch=await chooseCardModal('Choose a card to pass right',p.hand);
       if(ch>=0)passes.set(q,p.hand[ch]);
     }else{
       const idx=botPassChoice(q);
@@ -1855,11 +1968,11 @@ async function resolveTermite(source){
     return;
   }
 
-  // Route each card to the next participating player clockwise.
+  // Pass to the right (opposite turn order), skipping players without cards.
   const transfers=[];
   for(const from of participants){
-    let to=(from+1)%4;
-    while(!participants.includes(to))to=(to+1)%4;
+    let to=(from+3)%4;
+    while(!participants.includes(to))to=(to+3)%4;
     transfers.push({from,to,card:passes.get(from)});
   }
 
@@ -1875,7 +1988,7 @@ async function resolveTermite(source){
     G.players[to].knownSingle=G.players[to].hand.length===1?card:null;
   }
 
-  log('Termite exchange resolves. Everyone passes one card left.');
+  log('Termite exchange resolves. Everyone passes one card right.');
   render();
 
   const humanTransfer=transfers.find(t=>t.to===0);
@@ -2804,6 +2917,7 @@ async function showGameEventOverlay({kicker='',title='',subtitle='',cards=[],kin
   const cardRow=cards.length?`<div class="event-card-row"></div>`:'';
   const dismiss=dismissible?`<button class="event-dismiss primary">DISMISS</button>`:'';
   wrap.innerHTML=`<div class="game-event-card"><div class="event-kicker">${kicker}</div><div class="event-title">${title}</div>${cardRow}<div class="event-subtitle">${subtitle}</div>${dismiss}</div>`;
+  hideCardHoverTip();
   document.body.appendChild(wrap);
   if(cards.length){const row=wrap.querySelector('.event-card-row');cards.forEach(c=>{const e=cardEl(c);e.classList.add('event-show-card');row.appendChild(e);});}
   await new Promise(requestAnimationFrame);wrap.classList.add('show');
@@ -2812,6 +2926,7 @@ async function showGameEventOverlay({kicker='',title='',subtitle='',cards=[],kin
   }else{
     await sleep(duration);
   }
+  hideCardHoverTip();
   wrap.classList.remove('show');await sleep(260);wrap.remove();
 }
 async function showRunnerUpgradeOverlay(p,cards){
@@ -2929,7 +3044,8 @@ async function raccoonPurgeColor(player,play){
     '<p>Trash the remaining cards in your hand that match the color you pick. The strongest 2 stays on top of the pile.</p>',
     colors.map(color=>({label:COLOR_NAMES[color],value:color,className:`raccoon-${COLOR_NAMES[color].toLowerCase()}` })),
     false,
-    'raccoon-color-modal'
+    'raccoon-color-modal',
+    {reviewable:true}
   );
   return colors.includes(chosen)?chosen:play.top.c;
 }
@@ -2964,7 +3080,7 @@ async function chooseRunCard(playableCards,allowedPowers=null){
     value:c.id,
     primary:c.n===5||c.n===6
   }));
-  const id=await modalChoice('Choose the top card','Choose a real card that was playable by itself. It becomes the top card and activates.',choices);
+  const id=await modalChoice('Choose the top card','<p>Choose a real card that was playable by itself. It becomes the top card and activates.</p>',choices,false,'',{reviewable:true});
   return available.find(c=>c.id===id)||available[0];
 }
 
@@ -3254,6 +3370,17 @@ function resetForNextRound(){
   runLoop(gameSessionId);
 }
 
+function scoreTableHtml(scores,winnerPis,finalRound=false){
+  const ranked=G.players.map((player,pi)=>({player,pi}));
+  if(finalRound)ranked.sort((a,b)=>a.player.totalScore-b.player.totalScore);
+  const rows=ranked.map(({player,pi})=>{
+    const winning=winnerPis.includes(pi);
+    const badge=winning?`<span class="score-winner-badge">${finalRound?'Match winner':'Round winner'}</span>`:'';
+    return `<tr class="${winning?'score-winner':''}"><th scope="row"><span class="score-player">${player.name}</span>${badge}</th><td>${player.pantry.length}</td><td>${scores[pi]}</td><td class="score-total">${player.totalScore}</td></tr>`;
+  }).join('');
+  return `<div class="score-table-wrap"><table aria-label="${finalRound?'Final standings':'Round scoreboard'}"><thead><tr><th scope="col">Player</th><th scope="col">Pantry</th><th scope="col">Round</th><th scope="col">Total</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
 function finishRound(winnerPis=[]){
   if(!G||G.over)return;
   const resolved=[...new Set((winnerPis.length?winnerPis:playersWithEmptyHandAndPantry()).filter(pi=>G.players[pi]))];
@@ -3266,22 +3393,21 @@ function finishRound(winnerPis=[]){
   scores.forEach((score,pi)=>{G.players[pi].totalScore+=score;});
   render();
   const roundWinnerNames=resolved.map(pi=>G.players[pi].name);
-  const rows=G.players.map((p,pi)=>`<tr><th>${p.name}</th><td>${resolved.includes(pi)?'Winner':'Lost'}</td><td>${p.pantry.length}</td><td><strong>${scores[pi]}</strong></td><td>${p.totalScore}</td></tr>`).join('');
-  const table=`<div class="score-table-wrap"><table><thead><tr><th>Player</th><th>Result</th><th>Pantry</th><th>Round</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   const roundResult=roundWinnerNames.length>1?`${roundWinnerNames.join(' and ')} tie for the round win.`:resolved[0]===0?'You win the round.':`${roundWinnerNames[0]} wins the round.`;
   if(G.round<G.maxRounds){
     log(`${roundResult} Winners score 0; everyone else scores 1 plus their remaining Pantry Pests.`);
-    modalChoice(`Round ${G.round} complete`,`${table}<div class="victory-congrats">${roundResult}</div><p class="meta">Winners score 0. Everyone else scores 1 + remaining Pantry Pests. Lowest total wins after five rounds.</p>`,[{label:`Start Round ${G.round+1}`,value:true,primary:true}],false,'end-game-modal').then(()=>resetForNextRound());
+    const table=scoreTableHtml(scores,resolved);
+    modalChoice(roundResult,`${table}<p class="score-note">Round winners score 0. Everyone else scores 1 + remaining Pantry Pests. The lowest total wins.</p>`,[{label:`Start Round ${G.round+1}`,value:true,primary:true}],false,'results-modal',{kicker:`Round ${G.round} of ${G.maxRounds} complete`}).then(()=>resetForNextRound());
     return;
   }
   const best=Math.min(...G.players.map(p=>p.totalScore));
   const winners=G.players.map((p,pi)=>({p,pi})).filter(x=>x.p.totalScore===best);
   window.PITPAudio?.sfx(winners.some(x=>x.pi===0)?'win':'lose');
   winners.forEach(x=>reactGameEnd(x.pi));
-  const title=winners.length>1?'MATCH TIED':winners[0].pi===0?'YOU WIN':`${winners[0].p.name} WINS`;
   const result=winners.length>1?`${winners.map(x=>x.p.name).join(' and ')} tie with ${best} points.`:winners[0].pi===0?`You win with ${best} point${best===1?'':'s'}.`:`${winners[0].p.name} wins with ${best} point${best===1?'':'s'}.`;
   log(result);
-  setTimeout(()=>modalChoice(title,`${table}<div class="victory-congrats">${result}</div><p class="end-game-message">Lowest score wins.</p>`,[{label:'Home',value:'home',primary:true}],false,'end-game-modal').then(()=>showHomeScreen()),700);
+  const finalTable=scoreTableHtml(scores,winners.map(x=>x.pi),true);
+  setTimeout(()=>modalChoice(result,`${finalTable}<p class="score-note">Lowest total wins. “Round” shows points from the last round.</p>`,[{label:'Return Home',value:'home',primary:true}],false,'results-modal',{kicker:'Match complete'}).then(()=>showHomeScreen()),700);
 }
 
 function endGame(pi){
@@ -3352,15 +3478,15 @@ for(let slot=1;slot<=3;slot++){
 }
 
 els.play.onclick=()=>{
-  if(!humanResolver)return;
+  if(reviewingDecision||!humanResolver)return;
   clearHumanIdleReactionTimer();
   const indices=[...selected];
   humanResolver.resolve({indices});
   humanResolver=null;
 };
-els.draw.onclick=()=>{if(!humanResolver)return;clearHumanIdleReactionTimer();humanResolver.resolve('draw');humanResolver=null;};
+els.draw.onclick=()=>{if(reviewingDecision||!humanResolver)return;clearHumanIdleReactionTimer();humanResolver.resolve('draw');humanResolver=null;};
 function animateHandResort(nextMode){
-  if(handSortMode===nextMode)return;
+  if(reviewingDecision||handSortMode===nextMode)return;
   const before=new Map();
   document.querySelectorAll('#yourHand [data-card-id]').forEach(el=>{
     before.set(el.dataset.cardId,el.getBoundingClientRect());
@@ -3400,8 +3526,8 @@ function animateHandResort(nextMode){
 els.sortColor.onclick=()=>animateHandResort('color');
 els.sortNumber.onclick=()=>animateHandResort('number');
 els.drawPile.onclick=()=>{if(els.draw.disabled)return;els.draw.click();};
-els.outPile.onclick=()=>showOut();
-els.current.onclick=()=>showDiscardHistory();
+els.outPile.onclick=()=>openBoardInspector(showOut);
+els.current.onclick=()=>openBoardInspector(showDiscardHistory);
 
 async function pantryEntranceTransition(){
   if(!document.body.classList.contains('home-mode'))return;
@@ -3446,10 +3572,10 @@ async function requestNewGame(){
 }
 
 async function showUtilityInfo(title,message){
-  await modalChoice(title,`<p class="utility-info-copy">${message}</p>`,[{label:'Got it',value:true,primary:true}],false,'',false);
+  await modalChoice(title,`<p class="utility-info-copy">${message}</p>`,[{label:'Got it',value:true,primary:true}],false);
 }
 
-if(els.fastBotsInfo)els.fastBotsInfo.onclick=()=>showUtilityInfo('Skip Bot Wait Time','Removes the normal 3–5 second pause before bot moves so the game plays faster. It does not change which moves the bots choose.');
+if(els.fastBotsInfo)els.fastBotsInfo.onclick=()=>{if(!reviewingDecision&&!modalResolver)showUtilityInfo('Skip Bot Wait Time','Removes the normal 3–5 second pause before bot moves so the game plays faster. It does not change which moves the bots choose.');};
 
 els.start.onclick=requestNewGame;
 if(els.showHandsToggle)els.showHandsToggle.onchange=render;
@@ -3468,12 +3594,12 @@ if(els.introStart)els.introStart.onclick=()=>{
     els.setupPanel.classList.add('home-fade-in');
   },460);
 };
-if(els.introRules)els.introRules.onclick=showRules;
-els.home.onclick=showHomeScreen;
+if(els.introRules)els.introRules.onclick=()=>openBoardInspector(showRules);
+els.home.onclick=()=>{if(!reviewingDecision)showHomeScreen();};
 els.resume.onclick=showGameScreen;
 els.clearLog.onclick=()=>els.log.innerHTML='';
-els.modalClose.onclick=()=>{if(modalResolver){els.modal.classList.add('hidden');els.modalBody.className='';resetModalPresentation();modalResolver(null);modalResolver=null;}};
-els.rules.onclick=showRules;
+els.modalClose.onclick=dismissGameModal;
+els.rules.onclick=()=>openBoardInspector(showRules);
 
 function sortOutCards(cards){
   return [...cards].sort((a,b)=>{
@@ -3517,9 +3643,8 @@ function showOut(){
   }
 
   if(!cards.length)groups.innerHTML='<p class="meta">Nothing is in Trash yet.</p>';
-  els.modal.classList.remove('hidden');
-  els.modalClose.style.display='block';
   modalResolver=()=>{};
+  showGameModal({dismissible:true});
 }
 
 function showDiscardHistory(){
@@ -3546,9 +3671,8 @@ function showDiscardHistory(){
     });
   }
 
-  els.modal.classList.remove('hidden');
-  els.modalClose.style.display='block';
   modalResolver=()=>{};
+  showGameModal({dismissible:true});
 }
 
 function showRules(){
@@ -3566,9 +3690,8 @@ function showRules(){
   <h3>Attacks</h3><p>5 adds +2 and 6 adds +1. Legal 5/6 responses stack the attack. Beetle/7 blocks the entire attack and may always be played while under attack. Runs may also defend when their chosen real top card is a playable 5 or 6, or a 7 that blocks.</p>
   <h3>Trash / Reset</h3><p>After every other player passes on a successful play, the pile goes to Trash and the last player to play gets an open restart. If all four players pass on the original starting card, everyone has drawn once; that starting card goes to Trash and a new starting card is dealt for the same starting player. Moth/3 lets its player play again, but the pile stays in place and the next play must be made on that 3. When the draw deck empties, Trash cards are shuffled into a new draw deck.</p>
   </div>`;
-  els.modal.classList.remove('hidden');
-  els.modalClose.style.display='block';
   modalResolver=()=>{};
+  showGameModal({dismissible:true});
 }
 
 
